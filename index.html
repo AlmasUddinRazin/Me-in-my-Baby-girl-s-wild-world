@@ -257,10 +257,8 @@
   </div>
 
   <script type="module">
-    // Direct modular import to guarantee clean initialization sequence
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-    // --- GLOBAL INITIALIZATION CONFIGURATION ---
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     
@@ -277,7 +275,6 @@
     let isRecording = false;
     let selectedPostFile = null;
 
-    // Explicit window scoping to expose functions to HTML button attributes
     window.toggleAuthMode = function(toRegister) {
       document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
       document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
@@ -367,6 +364,7 @@
       fetchChatHistory();
       fetchTimelinePosts();
       
+      // FIX: Chained handlers completely BEFORE calling .subscribe()
       supabaseClient.channel('room-changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { renderMessageBubble(payload.new); })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
@@ -374,11 +372,15 @@
     }
 
     async function fetchChatHistory() {
-      const { data } = await supabaseClient.from('messages').select('*').order('timestamp', { ascending: true });
-      if (data) {
+      // FIX: Smart fallback sorting. Checks for custom column 'timestamp', falls back to standard 'created_at' if it drops a 400.
+      let response = await supabaseClient.from('messages').select('*').order('timestamp', { ascending: true });
+      if (response.error) {
+         response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+      }
+      if (response.data) {
         const chatArea = document.getElementById('chatArea');
         chatArea.innerHTML = '';
-        data.forEach(msg => renderMessageBubble(msg));
+        response.data.forEach(msg => renderMessageBubble(msg));
       }
     }
 
@@ -397,6 +399,9 @@
         else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
       }
 
+      // FIX: Standard time lookup calculation handles both custom fields and default record stamps safely
+      const cleanTime = msg.timestamp || msg.created_at || new Date();
+
       row.innerHTML = `
         <img src="https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(profile.name)}" class="msg-avatar" />
         <div class="msg-content-block">
@@ -404,7 +409,7 @@
           <div class="msg">
             ${msg.text ? `<div>${msg.text}</div>` : ''}
             ${mediaMarkup}
-            <div class="msg-meta-line">${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="msg-meta-line">${new Date(cleanTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
           </div>
         </div>
       `;
@@ -550,6 +555,7 @@
     
     window.hangupActiveCall = function() { document.getElementById('callOverlay').classList.remove('active'); if(currentCall) currentCall.close(); if(localStream) localStream.getTracks().forEach(t=>t.stop()); };
     
+    // FIX: Assigned explicitly to the window scope so inline HTML layout can locate it
     window.handleAvatarError = function(img, name) { img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`; };
   </script>
 </body>
