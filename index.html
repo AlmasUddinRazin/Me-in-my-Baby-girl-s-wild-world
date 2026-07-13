@@ -7,7 +7,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
     :root{
@@ -257,13 +256,15 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    // Direct modular import to guarantee clean initialization sequence
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
     // --- GLOBAL INITIALIZATION CONFIGURATION ---
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     
-    // Fixed declaration collision with the loaded CDN variable
-    const supabaseClient = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
     
     const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥰","😘","❤️","✨","🔥","🌸"];
     let currentUser = null; 
@@ -276,12 +277,13 @@
     let isRecording = false;
     let selectedPostFile = null;
 
-    function toggleAuthMode(toRegister) {
+    // Explicit window scoping to expose functions to HTML button attributes
+    window.toggleAuthMode = function(toRegister) {
       document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
       document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
-    }
+    };
 
-    async function handleAuthentication() {
+    window.handleAuthentication = async function() {
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
       const errEl = document.getElementById('authErr');
@@ -290,9 +292,9 @@
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) { errEl.textContent = error.message; return; }
       checkSessionState(data.user);
-    }
+    };
 
-    async function handleRegistration() {
+    window.handleRegistration = async function() {
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
@@ -305,7 +307,7 @@
         alert("Registration Complete! Logging you in...");
         checkSessionState(data.user);
       }
-    }
+    };
 
     async function checkSessionState(user) {
       if (!user) return;
@@ -329,13 +331,13 @@
       document.getElementById(id).classList.add('active');
     }
 
-    async function signOutSession() {
+    window.signOutSession = async function() {
       if(peer) peer.destroy();
       await supabaseClient.auth.signOut();
       location.reload();
-    }
+    };
 
-    function switchTab(target) {
+    window.switchTab = function(target) {
       document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       if(target === 'chat') {
@@ -345,7 +347,7 @@
         document.getElementById('panelTimeline').classList.add('active');
         document.getElementById('tabTimelineBtn').classList.add('active');
       }
-    }
+    };
 
     async function initializePortal(myProfile) {
       document.getElementById('whoLine').textContent = myProfile.name;
@@ -410,15 +412,15 @@
       chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    async function sendTextMessage() {
+    window.sendTextMessage = async function() {
       const input = document.getElementById('chatInput');
       const txt = input.value.trim();
       if(!txt) return;
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt }]);
       input.value = '';
-    }
+    };
 
-    async function handleChatUpload(inputElement) {
+    window.handleChatUpload = async function(inputElement) {
       const file = inputElement.files[0];
       if (!file) return;
       const uniqueName = `${Date.now()}-${file.name}`;
@@ -429,9 +431,9 @@
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType }]);
-    }
+    };
 
-    function toggleVoiceRecording() {
+    window.toggleVoiceRecording = function() {
       if (!isRecording) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
           mediaRecorder = new MediaRecorder(stream);
@@ -442,14 +444,14 @@
           document.getElementById('voiceRecordOverlay').classList.add('active');
         });
       }
-    }
+    };
 
-    function cancelVoiceRecording() {
+    window.cancelVoiceRecording = function() {
       if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
       document.getElementById('voiceRecordOverlay').classList.remove('active');
-    }
+    };
 
-    function stopAndSendVoice() {
+    window.stopAndSendVoice = function() {
       if(mediaRecorder) {
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -463,11 +465,11 @@
         isRecording = false;
       }
       document.getElementById('voiceRecordOverlay').classList.remove('active');
-    }
+    };
 
-    function toggleEmojiBox(e) { e.stopPropagation(); document.getElementById('universalEmojiBox').classList.toggle('active'); }
+    window.toggleEmojiBox = function(e) { e.stopPropagation(); document.getElementById('universalEmojiBox').classList.toggle('active'); };
     
-    function closeEmojiBox() { document.getElementById('universalEmojiBox').classList.remove('active'); }
+    window.closeEmojiBox = function() { document.getElementById('universalEmojiBox').classList.remove('active'); };
     
     function loadEmojiGrid() {
       const container = document.getElementById('emojiGridContainer');
@@ -501,12 +503,12 @@
       }
     }
 
-    function handlePostFileSelected(el) {
+    window.handlePostFileSelected = function(el) {
       selectedPostFile = el.files[0];
       if(selectedPostFile) { document.getElementById('postFileBtn').textContent = "✅ Attached"; }
-    }
+    };
 
-    async function submitTimelinePost() {
+    window.submitTimelinePost = async function() {
       const textInput = document.getElementById('postText');
       const text = textInput.value.trim();
       if(!text && !selectedPostFile) return;
@@ -523,9 +525,9 @@
       textInput.value = '';
       selectedPostFile = null;
       document.getElementById('postFileBtn').textContent = "📸 Add Photo";
-    }
+    };
 
-    async function makePeerCall(wantsVideo) {
+    window.makePeerCall = async function(wantsVideo) {
       document.getElementById('callOverlay').classList.add('active');
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
       document.getElementById('localVideo').srcObject = localStream;
@@ -533,22 +535,22 @@
       if(!partnerId) return;
       currentCall = peer.call(partnerId, localStream);
       currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
-    }
+    };
 
-    async function acceptIncomingCall() {
+    window.acceptIncomingCall = async function() {
       document.getElementById('incomingBanner').classList.remove('active');
       document.getElementById('callOverlay').classList.add('active');
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
       document.getElementById('localVideo').srcObject = localStream;
       currentCall.answer(localStream);
       currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
-    }
+    };
 
-    function rejectIncomingCall() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); }
+    window.rejectIncomingCall = function() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); };
     
-    function hangupActiveCall() { document.getElementById('callOverlay').classList.remove('active'); if(currentCall) currentCall.close(); if(localStream) localStream.getTracks().forEach(t=>t.stop()); }
+    window.hangupActiveCall = function() { document.getElementById('callOverlay').classList.remove('active'); if(currentCall) currentCall.close(); if(localStream) localStream.getTracks().forEach(t=>t.stop()); };
     
-    function handleAvatarError(img, name) { img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`; }
+    window.handleAvatarError = function(img, name) { img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`; };
   </script>
 </body>
 </html>
