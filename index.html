@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Me in my Baby girl's wild world</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+
+<style>
+  :root{
+    --bg: #0F1220;
+    --bg-deep: #0A0C16;
+    --card: #1D1730;
+    --card-2: #241C3A;
+    --rose: #D9A5A0;
+    --gold: #E8C170;
+    --text: #F2E9E4;
+    --muted: #9C8AA5;
+    --border: rgba(232,193,112,0.16);
+    --danger: #C97064;
+    --success: #64C9A2;
+    --radius: 18px;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; min-height:100vh;
+    background: radial-gradient(circle at 20% -10%, rgba(217,165,160,0.10), transparent 45%), radial-gradient(circle at 90% 10%, rgba(232,193,112,0.08), transparent 40%), var(--bg);
+    color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  h1,h2,h3 { font-family: 'Cormorant Garamond', serif; font-weight:600; letter-spacing:0.01em; }
+  .screen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+  .screen.active { display:flex; }
+
+  /* ---------- Auth Portal ---------- */
+  .auth-card {
+    width:100%; max-width:400px; background: linear-gradient(180deg, var(--card), var(--card-2));
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 34px; text-align:center; box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+  }
+  .auth-card h1 { font-size:2.1rem; margin: 0 0 6px; color: var(--gold); }
+  .field { text-align:left; margin-bottom:16px; }
+  .field label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
+  .field input {
+    width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
+    background: rgba(0,0,0,0.25); color:var(--text); font-family:'Inter'; font-size:0.95rem;
+  }
+  .btn {
+    width:100%; padding:13px; border-radius:10px; border:none; background: linear-gradient(180deg, var(--rose), #c98b85);
+    color:#241C3A; font-weight:600; font-size:0.95rem; cursor:pointer; transition: transform 0.15s ease;
+  }
+  .btn.gold { background: linear-gradient(180deg, var(--gold), #c99f4d); }
+  .btn.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn.danger { background: linear-gradient(180deg, var(--danger), #a9483d); color:#fff; }
+  .btn.small { width:auto; padding:6px 12px; font-size:0.8rem; }
+  .err { color: var(--danger); font-size:0.82rem; margin-bottom:14px; text-align:left; }
+
+  /* ---------- App Structure ---------- */
+  #appScreen { align-items:stretch; padding:0; }
+  .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; position: relative; }
+  .topbar {
+    display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
+    border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px); flex-shrink: 0;
+  }
+  .profile-meta-block { display:flex; align-items:center; gap:12px; }
+  .avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; border:1px solid var(--gold); background: #241C3A; }
+  .top-actions { display:flex; gap:8px; align-items:center; }
+  
+  .icon-btn {
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
+    background: var(--card); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+  }
+  .icon-btn:hover { border-color: var(--gold); }
+
+  .nav-tabs { display: flex; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .nav-tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
+  .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,0.02); }
+  
+  .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; }
+  .content-panel.active { display: flex; }
+
+  /* ---------- Chat UI ---------- */
+  .chat-area { flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:12px; }
+  .msg-row { display:flex; gap:8px; max-width:85%; align-items: flex-end; }
+  .msg-row.mine { align-self:flex-end; flex-direction: row-reverse; }
+  .msg-row.theirs { align-self:flex-start; flex-direction: row; }
+  .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gold); background: #241C3A; flex-shrink: 0; }
+  .msg-content-block { display:flex; flex-direction:column; max-width: calc(100% - 42px); }
+  .msg-row.mine .msg-content-block { align-items: flex-end; }
+  .msg-row.theirs .msg-content-block { align-items: flex-start; }
+  .sender-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; padding: 0 4px; }
+  .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; }
+  .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
+  .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
+  .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
+  .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
+  
+  .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:4px; display:block; }
+  .msg audio { width:100%; margin-top:6px; display:block; }
+
+  /* ---------- Timeline Feed ---------- */
+  .timeline-area { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
+  .timeline-composer { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .timeline-composer textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; resize: none; font-family: inherit; }
+  .post-card { background: var(--card-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 12px; }
+  .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .post-author { font-weight: 600; color: var(--gold); }
+  .post-time { font-size: 0.75rem; color: var(--muted); }
+  .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
+  .post-img { width: 100%; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; }
+
+  /* ---------- Composer & Overlays ---------- */
+  .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; position: relative; }
+  .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 10; border-top: 1px solid var(--danger); }
+  .voice-record-overlay.active { display: flex; }
+  .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+  
+  .universal-emoji-box { position: absolute; bottom: 100%; left: 16px; width: 320px; max-height: 220px; background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 99; overflow: hidden; }
+  .universal-emoji-box.active { display: flex; }
+  .emoji-box-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--gold); }
+  .emoji-box-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; overflow-y: auto; }
+  .box-emoji-item { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 4px; border-radius: 6px; }
+  .box-emoji-item:hover { background: rgba(255,255,255,0.1); }
+
+  .composer { display:flex; gap:8px; padding: 12px 16px; align-items:flex-end; }
+  .composer textarea { flex:1; resize:none; max-height:100px; padding:12px 14px; border-radius:14px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; }
+
+  /* ---------- Calling Overlay ---------- */
+  #callOverlay { position:fixed; inset:0; background: #06050C; display:none; align-items:center; justify-content:center; z-index:200; flex-direction:column; }
+  #callOverlay.active { display:flex; }
+  .video-stage { position:relative; width:min(95vw, 680px); aspect-ratio: 4/3; background:#000; border-radius:20px; overflow:hidden; border:1px solid var(--border); }
+  #remoteVideo { width:100%; height:100%; object-fit:cover; }
+  #localVideo { position:absolute; width:25%; bottom:14px; right:14px; border-radius:10px; border:2px solid var(--gold); object-fit:cover; z-index:2; }
+  .call-controls { display:flex; gap:16px; margin-top:22px; }
+  .incoming-banner { position:fixed; top:20px; left:50%; transform:translateX(-50%); background: var(--card); border:2px solid var(--gold); padding:16px 22px; border-radius:14px; display:none; align-items:center; gap:16px; z-index:300; }
+  .incoming-banner.active { display:flex; }
+</style>
+</head>
+<body>
+
+<div id="authScreen" class="screen active">
+  <div class="auth-card">
+    <h1>Our Wild World</h1>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Secure Vault Authorization Required.</p>
+    
+    <div id="loginForm">
+      <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
+      <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
+      <div class="err" id="authErr"></div>
+      <button class="btn gold" onclick="handleAuthentication()">Enter Space</button>
+      <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+        Need access? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(true)">Request Registration</a>
+      </p>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
+      <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
+      <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
+      <button class="btn" onclick="handleRegistration()">Submit Application</button>
+      <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+        Already registered? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(false)">Sign In</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="pendingScreen" class="screen">
+  <div class="auth-card">
+    <h1>Awaiting Access Keys</h1>
+    <p style="color:var(--muted); line-height:1.5;">Your secure account is pending portal authorization. The supervisor must approve your entry profile.</p>
+    <button class="btn ghost" style="margin-top:20px;" onclick="signOutSession()">Disconnect Session</button>
+  </div>
+</div>
+
+<div id="appScreen" class="screen">
+  <div class="app-wrap">
+    <div class="topbar">
+      <div class="profile-meta-block">
+        <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="handleAvatarError(this, 'Us')" />
+        <div>
+          <h2 id="topBarTitle">Our Sealed Space</h2>
+          <div class="who" id="whoLine"></div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="icon-btn" title="Voice Call" onclick="makePeerCall(false)">📞</button>
+        <button class="icon-btn" title="Video Call" onclick="makePeerCall(true)">🎥</button>
+        <button class="icon-btn" title="Logout" onclick="signOutSession()">⏻</button>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <div class="nav-tab active" id="tabChatBtn" onclick="switchTab('chat')">💬 WhatsApp Chat</div>
+      <div class="nav-tab" id="tabTimelineBtn" onclick="switchTab('timeline')">🖼️ Our Timeline</div>
+    </div>
+
+    <div id="panelChat" class="content-panel active">
+      <div class="chat-area" id="chatArea" onclick="closeEmojiBox()"></div>
+      <div class="composer-wrapper">
+        <div class="voice-record-overlay" id="voiceRecordOverlay">
+          <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
+          <div style="display:flex; gap:10px;">
+            <button class="btn small danger" onclick="cancelVoiceRecording()">✕ Cancel</button>
+            <button class="btn small gold" style="background:#4fa885;" onclick="stopAndSendVoice()">⏹️ Send</button>
+          </div>
+        </div>
+
+        <div class="universal-emoji-box" id="universalEmojiBox">
+          <div class="emoji-box-header"><span>Select Emoji</span><span style="cursor:pointer;" onclick="closeEmojiBox()">✕</span></div>
+          <div class="emoji-box-grid" id="emojiGridContainer"></div>
+        </div>
+
+        <div class="composer">
+          <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleChatUpload(this)" />
+          <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
+          <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
+          <button class="icon-btn" onclick="toggleEmojiBox(event)">😀</button>
+          <textarea id="chatInput" placeholder="Type an encrypted message..." rows="1"></textarea>
+          <button class="btn small gold" style="border-radius:12px; width:60px;" onclick="sendTextMessage()">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="panelTimeline" class="content-panel">
+      <div class="timeline-area">
+        <div class="timeline-composer">
+          <textarea id="postText" placeholder="What's on your mind today, beautiful?..." rows="3"></textarea>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+            <input type="file" id="postFileInput" accept="image/*" style="display:none;" onchange="handlePostFileSelected(this)" />
+            <button class="btn ghost small" id="postFileBtn" onclick="document.getElementById('postFileInput').click()">📸 Add Photo</button>
+            <button class="btn gold small" onclick="submitTimelinePost()">Publish Post</button>
+          </div>
+        </div>
+        <div id="timelineFeed"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="incoming-banner" id="incomingBanner">
+  <span style="color:var(--gold); font-weight:600;">Incoming Ringing Line...</span>
+  <button class="btn small gold" onclick="acceptIncomingCall()">Answer</button>
+  <button class="btn small danger" onclick="rejectIncomingCall()">Decline</button>
+</div>
+
+<div id="callOverlay">
+  <div style="color:var(--gold); margin-bottom:14px; font-size:1.2rem;" id="callStatusMessage">Secure Call Active</div>
+  <div class="video-stage">
+    <video id="remoteVideo" autoplay playsinline></video>
+    <video id="localVideo" autoplay playsinline muted></video>
+  </div>
+  <div class="call-controls">
+    <button class="icon-btn" style="background:var(--danger); width:60px; height:60px;" onclick="hangupActiveCall()">✖</button>
+  </div>
+</div>
+
+<script>
+// --- GLOBAL INITIALIZATION CONFIGURATION ---
+const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
+
+// Single proper initialization of the client object
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥰","😘","❤️","✨","🔥","🌸"];
+
+let currentUser = null; 
+let cachedProfiles = {};
+let peer = null;
+let currentCall = null;
+let localStream = null;
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+let selectedPostFile = null;
+
+function toggleAuthMode(toRegister) {
+  document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
+  document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
+}
+
+async function handleAuthentication() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = "";
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = error.message; return; }
+  checkSessionState(data.user);
+}
+
+async function handleRegistration() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if(error) { alert(error.message); return; }
+  
+  if(data.user) {
+    await supabase.from('profiles').insert([{ id: data.user.id, name: name, status: 'approved' }]);
+    alert("Registration Complete! Logging you in...");
+    checkSessionState(data.user);
+  }
+}
+
+async function checkSessionState(user) {
+  if (!user) return;
+  currentUser = user;
+
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+  if (!profile || profile.status !== 'approved') {
+    showScreen('pendingScreen');
+    return;
+  }
+  initializePortal(profile);
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session && session.user) checkSessionState(session.user);
+  else showScreen('authScreen');
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function signOutSession() {
+  if(peer) peer.destroy();
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+function switchTab(target) {
+  document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  if(target === 'chat') {
+    document.getElementById('panelChat').classList.add('active');
+    document.getElementById('tabChatBtn').classList.add('active');
+  } else {
+    document.getElementById('panelTimeline').classList.add('active');
+    document.getElementById('tabTimelineBtn').classList.add('active');
+  }
+}
+
+async function initializePortal(myProfile) {
+  document.getElementById('whoLine').textContent = myProfile.name;
+  document.getElementById('myAvatarDisplay').src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(myProfile.name)}`;
+  showScreen('appScreen');
+
+  const { data: profiles } = await supabase.from('profiles').select('*');
+  if(profiles) profiles.forEach(p => cachedProfiles[p.id] = p);
+
+  peer = new Peer(currentUser.id);
+  peer.on('call', (incomingCall) => {
+    currentCall = incomingCall;
+    document.getElementById('incomingBanner').classList.add('active');
+  });
+
+  loadEmojiGrid();
+  fetchChatHistory();
+  fetchTimelinePosts();
+  
+  supabase.channel('room-changes')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { renderMessageBubble(payload.new); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
+    .subscribe();
+}
+
+async function fetchChatHistory() {
+  const { data } = await supabase.from('messages').select('*').order('timestamp', { ascending: true });
+  if (data) {
+    const chatArea = document.getElementById('chatArea');
+    chatArea.innerHTML = '';
+    data.forEach(msg => renderMessageBubble(msg));
+  }
+}
+
+function renderMessageBubble(msg) {
+  const chatArea = document.getElementById('chatArea');
+  const isMe = msg.sender_uid === currentUser.id;
+  const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
+  
+  const row = document.createElement('div');
+  row.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
+  
+  let mediaMarkup = '';
+  if (msg.media_url) {
+    if (msg.media_type === 'image') mediaMarkup = `<img src="${msg.media_url}" />`;
+    else if (msg.media_type === 'video') mediaMarkup = `<video src="${msg.media_url}" controls></video>`;
+    else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
+  }
+
+  row.innerHTML = `
+    <img src="https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(profile.name)}" class="msg-avatar" />
+    <div class="msg-content-block">
+      <span class="sender-label">${profile.name}</span>
+      <div class="msg">
+        ${msg.text ? `<div>${msg.text}</div>` : ''}
+        ${mediaMarkup}
+        <div class="msg-meta-line">${new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+      </div>
+    </div>
+  `;
+  chatArea.appendChild(row);
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+async function sendTextMessage() {
+  const input = document.getElementById('chatInput');
+  const txt = input.value.trim();
+  if(!txt) return;
+  await supabase.from('messages').insert([{ sender_uid: currentUser.id, text: txt }]);
+  input.value = '';
+}
+
+async function handleChatUpload(inputElement) {
+  const file = inputElement.files[0];
+  if (!file) return;
+  const uniqueName = `${Date.now()}-${file.name}`;
+  
+  const { data, error } = await supabase.storage.from('media').upload(uniqueName, file);
+  if (error) return;
+  
+  const { data: urlData } = supabase.storage.from('media').getPublicUrl(uniqueName);
+  let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
+  await supabase.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType }]);
+}
+
+function toggleVoiceRecording() {
+  if (!isRecording) {
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('voiceRecordOverlay').classList.add('active');
+    });
+  }
+}
+function cancelVoiceRecording() {
+  if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
+  document.getElementById('voiceRecordOverlay').classList.remove('active');
+}
+function stopAndSendVoice() {
+  if(mediaRecorder) {
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      const file = new File([audioBlob], "voice.webm");
+      const uniqueName = `${Date.now()}-voice.webm`;
+      await supabase.storage.from('media').upload(uniqueName, file);
+      const { data } = supabase.storage.from('media').getPublicUrl(uniqueName);
+      await supabase.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio' }]);
+    };
+    mediaRecorder.stop();
+    isRecording = false;
+  }
+  document.getElementById('voiceRecordOverlay').classList.remove('active');
+}
+
+function toggleEmojiBox(e) { e.stopPropagation(); document.getElementById('universalEmojiBox').classList.toggle('active'); }
+function closeEmojiBox() { document.getElementById('universalEmojiBox').classList.remove('active'); }
+function loadEmojiGrid() {
+  const container = document.getElementById('emojiGridContainer');
+  container.innerHTML = '';
+  emojiPack.forEach(emoji => {
+    const el = document.createElement('div'); el.className = 'box-emoji-item'; el.textContent = emoji;
+    el.onclick = () => { document.getElementById('chatInput').value += emoji; };
+    container.appendChild(el);
+  });
+}
+
+async function fetchTimelinePosts() {
+  const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+  if (data) {
+    const feed = document.getElementById('timelineFeed');
+    feed.innerHTML = '';
+    data.forEach(post => {
+      const profile = cachedProfiles[post.sender_uid] || { name: 'System User' };
+      const card = document.createElement('div');
+      card.className = 'post-card';
+      card.innerHTML = `
+        <div class="post-header">
+          <div class="post-author">${profile.name}</div>
+          <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
+        </div>
+        <div class="post-body">${post.text || ''}</div>
+        ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
+      `;
+      feed.appendChild(card);
+    });
+  }
+}
+
+function handlePostFileSelected(el) {
+  selectedPostFile = el.files[0];
+  if(selectedPostFile) { document.getElementById('postFileBtn').textContent = "✅ Attached"; }
+}
+
+async function submitTimelinePost() {
+  const textInput = document.getElementById('postText');
+  const text = textInput.value.trim();
+  if(!text && !selectedPostFile) return;
+  
+  let mediaUrl = null;
+  if(selectedPostFile) {
+    const uniqueName = `${Date.now()}-${selectedPostFile.name}`;
+    await supabase.storage.from('media').upload(uniqueName, selectedPostFile);
+    const { data } = supabase.storage.from('media').getPublicUrl(uniqueName);
+    mediaUrl = data.publicUrl;
+  }
+
+  await supabase.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
+  textInput.value = '';
+  selectedPostFile = null;
+  document.getElementById('postFileBtn').textContent = "📸 Add Photo";
+}
+
+async function makePeerCall(wantsVideo) {
+  document.getElementById('callOverlay').classList.add('active');
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
+  document.getElementById('localVideo').srcObject = localStream;
+  const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+  if(!partnerId) return;
+  currentCall = peer.call(partnerId, localStream);
+  currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
+}
+
+async function acceptIncomingCall() {
+  document.getElementById('incomingBanner').classList.remove('active');
+  document.getElementById('callOverlay').classList.add('active');
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+  document.getElementById('localVideo').srcObject = localStream;
+  currentCall.answer(localStream);
+  currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
+}
+function rejectIncomingCall() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); }
+function hangupActiveCall() { document.getElementById('callOverlay').classList.remove('active'); if(currentCall) currentCall.close(); if(localStream) localStream.getTracks().forEach(t=>t.stop()); }
+function handleAvatarError(img, name) { img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`; }
+</script>
+</body>
+</html>
