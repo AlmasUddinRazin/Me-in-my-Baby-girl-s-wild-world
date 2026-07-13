@@ -13,7 +13,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-storage-compat.js"></script>
 
 <style>
   :root{
@@ -60,12 +59,6 @@
     transition: transform 0.6s ease;
   }
   .seal svg { width:30px; height:30px; }
-  .seal.unlocked { animation: melt 0.9s ease forwards; }
-  @keyframes melt {
-    0% { transform: scale(1) rotate(0deg); }
-    40% { transform: scale(1.15) rotate(-8deg); }
-    100% { transform: scale(0) rotate(20deg); opacity:0; }
-  }
 
   .auth-card {
     width:100%; max-width:400px;
@@ -134,7 +127,7 @@
   .msg.theirs { align-self:flex-start; background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
   .msg .meta { display:block; font-size:0.68rem; opacity:0.65; margin-top:4px; }
   .msg img, .msg video { max-width:100%; border-radius:10px; margin-top:6px; display:block; }
-  .msg a.file-link { color: var(--gold); }
+  .msg a.file-link { color: var(--gold); display: inline-block; margin-top: 6px; font-weight: 500; }
 
   .composer { display:flex; gap:8px; padding: 14px 16px; border-top:1px solid var(--border); background: rgba(13,11,24,0.6); align-items:flex-end; }
   .composer textarea {
@@ -143,7 +136,6 @@
     font-family:'Inter'; font-size:0.92rem; line-height:1.4;
   }
   .composer textarea:focus { outline: 1px solid var(--gold); }
-  .composer input[type=file] { display:none; }
 
   /* ---------- Admin ---------- */
   .admin-card { max-width:520px; width:100%; }
@@ -229,7 +221,7 @@
       <div class="top-actions">
         <button class="icon-btn" title="Voice call" onclick="startCall(false)">📞</button>
         <button class="icon-btn" title="Video call" onclick="startCall(true)">🎥</button>
-        <button class="icon-btn" title="Attach media" onclick="document.getElementById('mediaInput').click()">📎</button>
+        <button class="icon-btn" title="Share media link" onclick="shareMediaLink()">📎</button>
         <button class="icon-btn" id="adminBtn" title="Admin" style="display:none;" onclick="toggleAdmin()">🗝️</button>
         <button class="icon-btn" title="Sign out" onclick="doSignOut()">⏻</button>
       </div>
@@ -238,7 +230,6 @@
     <div class="chat-area" id="chatArea"></div>
 
     <div class="composer">
-      <input type="file" id="mediaInput" accept="image/*,video/*,audio/*" onchange="handleMediaSelect(event)" />
       <textarea id="msgInput" placeholder="Say something to your world..." rows="1" onkeydown="handleComposerKey(event)"></textarea>
       <button class="btn small gold" onclick="sendMessage()">Send</button>
     </div>
@@ -292,7 +283,6 @@ const ADMIN_EMAIL = "almas.razin.official@gmail.com";
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
-const storage = firebase.storage();
 
 let currentUser = null;
 let unsubMessages = null;
@@ -351,7 +341,6 @@ auth.onAuthStateChanged(async (user) => {
   const data = doc.data();
   if(data.status !== 'approved'){
     showScreen('pendingScreen');
-    // watch for approval live
     unsubPending = db.collection('users').doc(user.uid).onSnapshot(d => {
       if(d.exists && d.data().status === 'approved'){
         enterApp(data);
@@ -426,26 +415,29 @@ function sendMessage(){
   input.value = '';
 }
 
-function handleMediaSelect(event){
-  const file = event.target.files[0];
-  if(!file) return;
-  const path = `media/${currentUser.uid}/${Date.now()}_${file.name}`;
-  const ref = storage.ref().child(path);
-  ref.put(file).then(snap => snap.ref.getDownloadURL()).then(url => {
-    let mediaType = 'file';
-    if(file.type.startsWith('image/')) mediaType = 'image';
-    else if(file.type.startsWith('video/')) mediaType = 'video';
-    else if(file.type.startsWith('audio/')) mediaType = 'audio';
-    db.collection('messages').add({
-      senderUid: currentUser.uid,
-      senderEmail: currentUser.email,
-      text: '',
-      mediaUrl: url,
-      mediaType,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  }).catch(err => alert('Upload failed: ' + err.message));
-  event.target.value = '';
+function shareMediaLink(){
+  const url = prompt("Paste your media URL here (e.g. Google Drive, Imgur link, YouTube, etc.):");
+  if(!url) return;
+  
+  let mediaType = 'file';
+  const cleanUrl = url.toLowerCase().split('?')[0];
+  
+  if(/\.(jpeg|jpg|gif|png|webp)$/.test(cleanUrl) || cleanUrl.includes('imgur.com')) {
+    mediaType = 'image';
+  } else if(/\.(mp4|webm|ogg)$/.test(cleanUrl) || cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be')) {
+    mediaType = 'video';
+  } else if(/\.(mp3|wav|ogg)$/.test(cleanUrl)) {
+    mediaType = 'audio';
+  }
+
+  db.collection('messages').add({
+    senderUid: currentUser.uid,
+    senderEmail: currentUser.email,
+    text: '',
+    mediaUrl: url,
+    mediaType,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
 
 function watchMessages(){
@@ -459,10 +451,22 @@ function watchMessages(){
       let inner = '';
       if(m.text) inner += `<div>${escapeHtml(m.text)}</div>`;
       if(m.mediaUrl){
-        if(m.mediaType === 'image') inner += `<img src="${m.mediaUrl}" />`;
-        else if(m.mediaType === 'video') inner += `<video src="${m.mediaUrl}" controls></video>`;
-        else if(m.mediaType === 'audio') inner += `<audio src="${m.mediaUrl}" controls style="width:100%; margin-top:6px;"></audio>`;
-        else inner += `<a class="file-link" href="${m.mediaUrl}" target="_blank">Download file</a>`;
+        if(m.mediaType === 'image') {
+          inner += `<img src="${m.mediaUrl}" onerror="this.onerror=null; this.outerHTML='<a class=\\'file-link\\' href=\\'${m.mediaUrl}\\' target=\\'_blank\\'>🔗 View Photo Link</a>';" />`;
+        } else if(m.mediaType === 'video') {
+          if(m.mediaUrl.includes('youtube.com') || m.mediaUrl.includes('youtu.be')) {
+            let ytId = '';
+            if(m.mediaUrl.includes('youtu.be/')) ytId = m.mediaUrl.split('youtu.be/')[1].split(/[?#]/)[0];
+            else if(m.mediaUrl.includes('v=')) ytId = m.mediaUrl.split('v=')[1].split('&')[0];
+            inner += `<iframe width="100%" height="240" src="https://www.youtube.com/embed/${ytId}" frameborder="0" allowfullscreen style="border-radius:10px; margin-top:6px;"></iframe>`;
+          } else {
+            inner += `<video src="${m.mediaUrl}" controls></video>`;
+          }
+        } else if(m.mediaType === 'audio') {
+          inner += `<audio src="${m.mediaUrl}" controls style="width:100%; margin-top:6px;"></audio>`;
+        } else {
+          inner += `<a class="file-link" href="${m.mediaUrl}" target="_blank">🔗 Open Shared Media</a>`;
+        }
       }
       const ts = m.timestamp ? m.timestamp.toDate().toLocaleString() : '';
       inner += `<span class="meta">${ts}</span>`;
@@ -529,7 +533,7 @@ async function startCall(isVideo){
   const callDocRef = db.collection('calls').doc(CALL_DOC_ID);
   const offerCandidates = callDocRef.collection('offerCandidates');
   const answerCandidates = callDocRef.collection('answerCandidates');
-  // clear old candidates
+  
   await clearCollection(offerCandidates);
   await clearCollection(answerCandidates);
 
