@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Me in my Baby girl's wild world</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,13 +26,13 @@
 
     * { box-sizing: border-box; }
     body {
-      margin:0; min-height:100vh;
+      margin:0; height: 100vh; height: -webkit-fill-available;
       background: radial-gradient(circle at 20% -10%, rgba(217,165,160,0.10), transparent 45%), radial-gradient(circle at 90% 10%, rgba(232,193,112,0.08), transparent 40%), var(--bg);
       color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased;
-      overflow: hidden;
+      overflow: hidden; position: fixed; width: 100%;
     }
     h1,h2,h3 { font-family: 'Cormorant Garamond', serif; font-weight:600; letter-spacing:0.01em; }
-    .screen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
+    .screen { display:none; height:100vh; align-items:center; justify-content:center; padding:24px; }
     .screen.active { display:flex; }
 
     /* ---------- Auth Portal ---------- */
@@ -59,13 +59,20 @@
 
     /* ---------- App Structure ---------- */
     #appScreen { align-items:stretch; padding:0; }
-    .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; position: relative; }
+    .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; height: 100dvh; position: relative; }
     .topbar {
       display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
       border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px); flex-shrink: 0;
     }
     .profile-meta-block { display:flex; align-items:center; gap:12px; }
-    .avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; border:1px solid var(--gold); background: #241C3A; }
+    
+    .avatar-container { position: relative; width: 42px; height: 42px; }
+    .avatar { width:100%; height:100%; border-radius:50%; object-fit:cover; border:1px solid var(--gold); background: #241C3A; }
+    
+    /* Dynamic Presence Indicators */
+    .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); transition: background 0.3s ease; }
+    .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
     .top-actions { display:flex; gap:8px; align-items:center; }
     
     .icon-btn {
@@ -78,11 +85,11 @@
     .nav-tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
     .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,0.02); }
     
-    .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; }
+    .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; min-height: 0; }
     .content-panel.active { display: flex; }
 
     /* ---------- Chat UI ---------- */
-    .chat-area { flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:12px; }
+    .chat-area { flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:12px; min-height: 0; -webkit-overflow-scrolling: touch; }
     .msg-row { display:flex; gap:8px; max-width:85%; align-items: flex-end; }
     .msg-row.mine { align-self:flex-end; flex-direction: row-reverse; }
     .msg-row.theirs { align-self:flex-start; flex-direction: row; }
@@ -91,14 +98,31 @@
     .msg-row.mine .msg-content-block { align-items: flex-end; }
     .msg-row.theirs .msg-content-block { align-items: flex-start; }
     .sender-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; padding: 0 4px; }
-    .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; }
+    .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; position: relative; }
     .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
-    .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
-    .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
     
-    .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:4px; display:block; }
+    .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
+    .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
+    .status-tick { font-weight: bold; font-size: 0.75rem; display: inline-block; }
+
+    .msg img, .msg video { max-width:100%; max-height: 260px; border-radius:10px; margin-top:4px; display:block; }
     .msg audio { width:100%; margin-top:6px; display:block; }
+
+    /* ---------- Composer & Overlays ---------- */
+    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px pb-safe; flex-shrink: 0; z-index: 50; }
+    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; border-top: 1px solid var(--danger); }
+    .voice-record-overlay.active { display: flex; }
+    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+    
+    .universal-emoji-box { position: absolute; bottom: 70px; left: 16px; width: min(320px, 90vw); max-height: 220px; background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 99; overflow: hidden; }
+    .universal-emoji-box.active { display: flex; }
+    .emoji-box-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--gold); }
+    .emoji-box-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; overflow-y: auto; }
+    .box-emoji-item { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 4px; border-radius: 6px; }
+
+    .composer { display:flex; gap:8px; align-items:center; width: 100%; }
+    .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; line-height: 20px; }
 
     /* ---------- Timeline Feed ---------- */
     .timeline-area { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
@@ -110,22 +134,6 @@
     .post-time { font-size: 0.75rem; color: var(--muted); }
     .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
     .post-img { width: 100%; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; }
-
-    /* ---------- Composer & Overlays ---------- */
-    .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; position: relative; }
-    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 10; border-top: 1px solid var(--danger); }
-    .voice-record-overlay.active { display: flex; }
-    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
-    
-    .universal-emoji-box { position: absolute; bottom: 100%; left: 16px; width: 320px; max-height: 220px; background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 99; overflow: hidden; }
-    .universal-emoji-box.active { display: flex; }
-    .emoji-box-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--gold); }
-    .emoji-box-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; overflow-y: auto; }
-    .box-emoji-item { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 4px; border-radius: 6px; }
-    .box-emoji-item:hover { background: rgba(255,255,255,0.1); }
-
-    .composer { display:flex; gap:8px; padding: 12px 16px; align-items:flex-end; }
-    .composer textarea { flex:1; resize:none; max-height:100px; padding:12px 14px; border-radius:14px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; }
 
     /* ---------- Calling Overlay ---------- */
     #callOverlay { position:fixed; inset:0; background: #06050C; display:none; align-items:center; justify-content:center; z-index:200; flex-direction:column; }
@@ -178,7 +186,10 @@
     <div class="app-wrap">
       <div class="topbar">
         <div class="profile-meta-block">
-          <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="handleAvatarError(this, 'Us')" />
+          <div class="avatar-container">
+            <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="handleAvatarError(this, 'Us')" />
+            <div id="presenceIndicator" class="status-dot"></div>
+          </div>
           <div>
             <h2 id="topBarTitle">Our Sealed Space</h2>
             <div class="who" id="whoLine"></div>
@@ -217,8 +228,8 @@
             <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
             <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
             <button class="icon-btn" onclick="toggleEmojiBox(event)">😀</button>
-            <textarea id="chatInput" placeholder="Type an encrypted message..." rows="1"></textarea>
-            <button class="btn small gold" style="border-radius:12px; width:60px;" onclick="sendTextMessage()">Send</button>
+            <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
+            <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" onclick="sendTextMessage()">Send</button>
           </div>
         </div>
       </div>
@@ -326,6 +337,7 @@
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
+      if(id === 'appScreen') { setTimeout(() => { const c = document.getElementById('chatArea'); c.scrollTop = c.scrollHeight; }, 100); }
     }
 
     window.signOutSession = async function() {
@@ -340,6 +352,8 @@
       if(target === 'chat') {
         document.getElementById('panelChat').classList.add('active');
         document.getElementById('tabChatBtn').classList.add('active');
+        const c = document.getElementById('chatArea'); c.scrollTop = c.scrollHeight;
+        markAllAsRead();
       } else {
         document.getElementById('panelTimeline').classList.add('active');
         document.getElementById('tabTimelineBtn').classList.add('active');
@@ -354,7 +368,16 @@
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) profiles.forEach(p => cachedProfiles[p.id] = p);
 
-      peer = new Peer(currentUser.id);
+      // Setup PeerJS using reliable public cloud brokers for mobile connections
+      const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
+      peer = new Peer(sanitizedPeerId, {
+        host: '0.peerjs.com',
+        port: 443,
+        path: '/',
+        secure: true,
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
+      });
+
       peer.on('call', (incomingCall) => {
         currentCall = incomingCall;
         document.getElementById('incomingBanner').classList.add('active');
@@ -363,33 +386,68 @@
       loadEmojiGrid();
       fetchChatHistory();
       fetchTimelinePosts();
+      setupPresenceTracking(myProfile.name);
       
-      // FIX: Chained handlers completely BEFORE calling .subscribe()
       supabaseClient.channel('room-changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { renderMessageBubble(payload.new); })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
+          renderMessageBubble(payload.new); 
+          if(payload.new.sender_uid !== currentUser.id && document.getElementById('panelChat').classList.contains('active')) {
+             markAsRead(payload.new.id);
+          }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
+          const targetTick = document.getElementById(`tick-${payload.new.id}`);
+          if(targetTick) {
+             targetTick.textContent = payload.new.is_read ? '✓✓' : '✓';
+             if(payload.new.is_read) targetTick.style.color = '#64C9A2';
+          }
+        })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
         .subscribe();
+
+      markAllAsRead();
+    }
+
+    // Dynamic Realtime Presence Syncing Engine
+    function setupPresenceTracking(username) {
+      const presenceRoom = supabaseClient.channel('online-status', { config: { presence: { key: currentUser.id } } });
+      
+      presenceRoom
+        .on('presence', { event: 'sync' }, () => {
+          const state = presenceRoom.presenceState();
+          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+          const dot = document.getElementById('presenceIndicator');
+          if(partnerId && state[partnerId]) {
+            dot.classList.add('online');
+          } else {
+            dot.classList.remove('online');
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await presenceRoom.track({ name: username, online_at: new Date().toISOString() });
+          }
+        });
     }
 
     async function fetchChatHistory() {
-      // FIX: Smart fallback sorting. Checks for custom column 'timestamp', falls back to standard 'created_at' if it drops a 400.
-      let response = await supabaseClient.from('messages').select('*').order('timestamp', { ascending: true });
-      if (response.error) {
-         response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-      }
+      let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
       if (response.data) {
         const chatArea = document.getElementById('chatArea');
         chatArea.innerHTML = '';
         response.data.forEach(msg => renderMessageBubble(msg));
+        chatArea.scrollTop = chatArea.scrollHeight;
       }
     }
 
     function renderMessageBubble(msg) {
+      if(document.getElementById(`msg-${msg.id}`)) return;
       const chatArea = document.getElementById('chatArea');
       const isMe = msg.sender_uid === currentUser.id;
       const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
       
       const row = document.createElement('div');
+      row.id = `msg-${msg.id}`;
       row.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
       
       let mediaMarkup = '';
@@ -399,8 +457,14 @@
         else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
       }
 
-      // FIX: Standard time lookup calculation handles both custom fields and default record stamps safely
-      const cleanTime = msg.timestamp || msg.created_at || new Date();
+      const cleanTime = msg.created_at || new Date();
+      // Tick States: Sent (✓), Read (✓✓ in light blue/green color)
+      let tickMarkup = '';
+      if(isMe) {
+        const tickColor = msg.is_read ? 'color: #64C9A2;' : 'color: rgba(36,28,58,0.4);';
+        const tickText = msg.is_read ? '✓✓' : '✓';
+        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${tickText}</span>`;
+      }
 
       row.innerHTML = `
         <img src="https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(profile.name)}" class="msg-avatar" />
@@ -409,7 +473,10 @@
           <div class="msg">
             ${msg.text ? `<div>${msg.text}</div>` : ''}
             ${mediaMarkup}
-            <div class="msg-meta-line">${new Date(cleanTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="msg-meta-line">
+              ${new Date(cleanTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              ${tickMarkup}
+            </div>
           </div>
         </div>
       `;
@@ -421,9 +488,18 @@
       const input = document.getElementById('chatInput');
       const txt = input.value.trim();
       if(!txt) return;
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt }]);
       input.value = '';
+      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt, is_read: false }]);
     };
+
+    async function markAsRead(id) {
+      await supabaseClient.from('messages').update({ is_read: true }).eq('id', id);
+    }
+
+    async function markAllAsRead() {
+      if(!currentUser) return;
+      await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false);
+    }
 
     window.handleChatUpload = async function(inputElement) {
       const file = inputElement.files[0];
@@ -435,7 +511,7 @@
       
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType }]);
+      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
     };
 
     window.toggleVoiceRecording = function() {
@@ -447,7 +523,7 @@
           mediaRecorder.start();
           isRecording = true;
           document.getElementById('voiceRecordOverlay').classList.add('active');
-        });
+        }).catch(err => alert("Mic Access Denied"));
       }
     };
 
@@ -464,7 +540,7 @@
           const uniqueName = `${Date.now()}-voice.webm`;
           await supabaseClient.storage.from('media').upload(uniqueName, file);
           const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio' }]);
+          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
         };
         mediaRecorder.stop();
         isRecording = false;
@@ -473,7 +549,6 @@
     };
 
     window.toggleEmojiBox = function(e) { e.stopPropagation(); document.getElementById('universalEmojiBox').classList.toggle('active'); };
-    
     window.closeEmojiBox = function() { document.getElementById('universalEmojiBox').classList.remove('active'); };
     
     function loadEmojiGrid() {
@@ -536,9 +611,12 @@
       document.getElementById('callOverlay').classList.add('active');
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
       document.getElementById('localVideo').srcObject = localStream;
+      
       const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
       if(!partnerId) return;
-      currentCall = peer.call(partnerId, localStream);
+      const sanitizedPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
+      
+      currentCall = peer.call(sanitizedPartnerId, localStream);
       currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
     };
 
@@ -552,10 +630,7 @@
     };
 
     window.rejectIncomingCall = function() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); };
-    
     window.hangupActiveCall = function() { document.getElementById('callOverlay').classList.remove('active'); if(currentCall) currentCall.close(); if(localStream) localStream.getTracks().forEach(t=>t.stop()); };
-    
-    // FIX: Assigned explicitly to the window scope so inline HTML layout can locate it
     window.handleAvatarError = function(img, name) { img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}`; };
   </script>
 </body>
