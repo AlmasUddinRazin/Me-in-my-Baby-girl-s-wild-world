@@ -9,7 +9,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<!-- Firebase (compat SDKs) -->
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
@@ -82,6 +81,7 @@
     width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
     background: var(--card); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.05rem;
     position: relative;
+    user-select: none;
   }
   .icon-btn:hover { border-color: var(--gold); }
   .icon-btn.recording { background: var(--danger); animation: pulse 1.2s infinite; color: #fff; }
@@ -113,7 +113,6 @@
   /* ---------- Composer & Universal Emoji Drawer ---------- */
   .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; position: relative; }
   
-  /* Voice Interface UI overlay container */
   .voice-record-overlay {
     position: absolute; inset: 0; background: var(--card-2); display: none;
     align-items: center; justify-content: space-between; padding: 0 20px; z-index: 10;
@@ -128,7 +127,6 @@
   
   @keyframes bounce-wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1.1); } }
 
-  /* Built: Clean Universal Floating Emoji Drawer Box */
   .universal-emoji-box {
     position: absolute; bottom: 100%; left: 16px; width: 320px; max-height: 220px;
     background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px;
@@ -171,12 +169,18 @@
   }
   .incoming-banner.active { display:flex; }
 
+  /* Lightbox Advanced Engine Styles */
+  #lightboxOverlay { background: rgba(4,3,8,0.96); z-index: 500; transition: opacity 0.25s ease; padding: 0; }
+  .lightbox-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .lightbox-img { max-width: 95vw; max-height: 85vh; object-fit: contain; border-radius: 6px; transition: transform 0.3s cubic-bezier(0.1, 0.8, 0.3, 1); cursor: zoom-in; user-select: none; }
+  .lightbox-img.zoomed { transform: scale(1.8); cursor: zoom-out; }
+  .lightbox-actions { position: absolute; top: 20px; right: 20px; display: flex; gap: 12px; z-index: 510; }
+
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(201,112,100, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(201,112,100, 0); } 100% { box-shadow: 0 0 0 0 rgba(201,112,100, 0); } }
 </style>
 </head>
 <body>
 
-<!-- ================= AUTH ================= -->
 <div id="authScreen" class="screen active">
   <div class="auth-card">
     <h1>Our Wild World</h1>
@@ -199,7 +203,6 @@
   </div>
 </div>
 
-<!-- ================= WAITING ROOM ================= -->
 <div id="pendingScreen" class="screen">
   <div class="auth-card">
     <h1>Waiting at the door</h1>
@@ -208,7 +211,6 @@
   </div>
 </div>
 
-<!-- ================= MAIN APP SHELL ================= -->
 <div id="appScreen" class="screen">
   <div class="app-wrap">
     <div class="topbar">
@@ -232,7 +234,6 @@
     <div class="chat-area" id="chatArea" onclick="closeEmojiBox()"></div>
 
     <div class="composer-wrapper">
-      <!-- Voice Recording System Overlay UI -->
       <div class="voice-record-overlay" id="voiceRecordOverlay">
         <div class="voice-pulse-indicator">
           <div class="voice-wave"><span></span><span></span><span></span></div>
@@ -244,7 +245,6 @@
         </div>
       </div>
 
-      <!-- Universal Floating Emoji Box Layout -->
       <div class="universal-emoji-box" id="universalEmojiBox">
         <div class="emoji-box-header">
           <span>Select Emoji</span>
@@ -264,7 +264,6 @@
   </div>
 </div>
 
-<!-- PROFILE EDIT MODAL -->
 <div id="profileModal" class="modal-overlay">
   <div class="auth-card">
     <h1>Your Identity</h1>
@@ -282,7 +281,6 @@
   </div>
 </div>
 
-<!-- GATEKEEPER MODAL -->
 <div id="adminModal" class="modal-overlay">
   <div class="auth-card" style="max-width:480px;">
     <h1>Pending Admissions</h1>
@@ -291,7 +289,6 @@
   </div>
 </div>
 
-<!-- CALL SIGNALS -->
 <div class="incoming-banner" id="incomingBanner">
   <span id="incomingText">Incoming encrypted connection...</span>
   <button class="btn small gold" onclick="answerIncomingCall()">Accept</button>
@@ -315,6 +312,16 @@
   </div>
 </div>
 
+<div id="lightboxOverlay" class="modal-overlay" onclick="closeLightbox()">
+  <div class="lightbox-container">
+    <div class="lightbox-actions">
+      <a id="lightboxDownloadBtn" href="" download="shared-image.jpg" target="_blank" class="icon-btn" onclick="event.stopPropagation()" title="Download Image">📥</a>
+      <button class="icon-btn" onclick="closeLightbox()" title="Close Viewer">✕</button>
+    </div>
+    <img id="lightboxImage" class="lightbox-img" src="" alt="View Large" onclick="toggleLightboxZoom(event)" />
+  </div>
+</div>
+
 <script>
 /* ===================== CORE CONFIG ===================== */
 const firebaseConfig = {
@@ -335,16 +342,22 @@ const db = firebase.firestore();
 let currentUser = null;
 let profileData = {};
 let cachedUsers = {};
-let unsubMessages = null, unsubPending = null, unsubCallDoc = null, unsubUserCache = null, unsubRoomName = null;
+let unsubMessages = null, unsubPending = null, unsubCallDoc = null, unsubUserCache = null, unsubRoomName = null, unsubIceCandidates = null;
 let isTabFocused = true;
 
-/* Upgraded Audio States */
 let mediaRecorder = null;
 let audioChunks = [];
 let voiceTimerInterval = null;
 let voiceDurationSeconds = 0;
 
-const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😐","😑","😬","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","👂","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","💋","🩸","❤️","✨","🔥","🌸"];
+let peerConnection = null;
+let localStream = null;
+let isCallHost = false;
+let currentCallTypeVideo = false;
+
+const rtcConfig = { iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }] };
+
+const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😐","😑","😬","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","👋","👍","👎","❤️","✨","🔥","🌸"];
 
 window.addEventListener('focus', () => { isTabFocused = true; forceMarkAsRead(); });
 window.addEventListener('blur', () => { isTabFocused = false; });
@@ -356,11 +369,9 @@ function showScreen(id){
 function showSignup(){ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block'; }
 function showLogin(){ document.getElementById('signupForm').style.display='none'; document.getElementById('loginForm').style.display='block'; }
 
-/* ---------- Toggleable Emoji Drawer Box Logic ---------- */
 function toggleEmojiBox(e) {
   e.stopPropagation();
-  const box = document.getElementById('universalEmojiBox');
-  box.classList.toggle('active');
+  document.getElementById('universalEmojiBox').classList.toggle('active');
 }
 function closeEmojiBox() {
   document.getElementById('universalEmojiBox').classList.remove('active');
@@ -394,14 +405,51 @@ function loadEmojiGrid() {
     const el = document.createElement('div');
     el.className = 'box-emoji-item';
     el.textContent = emoji; 
-    el.onclick = (e) => {
-      e.stopPropagation();
-      insertEmoji(emoji);
-    };
+    el.onclick = (e) => { e.stopPropagation(); insertEmoji(emoji); };
     container.appendChild(el);
   });
 }
 loadEmojiGrid();
+
+/* ===================== IMAGE VIEWER ENGINES (Update 7) ===================== */
+let touchStartX = 0;
+let touchStartY = 0;
+
+function openLightbox(url) {
+  const overlay = document.getElementById('lightboxOverlay');
+  const img = document.getElementById('lightboxImage');
+  const dlBtn = document.getElementById('lightboxDownloadBtn');
+  
+  img.src = url;
+  img.classList.remove('zoomed');
+  dlBtn.href = url;
+  overlay.classList.add('active');
+
+  img.addEventListener('touchstart', handleTouchStart, { passive: true });
+  img.addEventListener('touchend', handleTouchEnd, { passive: true });
+}
+
+function closeLightbox() {
+  document.getElementById('lightboxOverlay').classList.remove('active');
+}
+
+function toggleLightboxZoom(e) {
+  e.stopPropagation();
+  document.getElementById('lightboxImage').classList.toggle('zoomed');
+}
+
+function handleTouchStart(e) {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}
+
+function handleTouchEnd(e) {
+  const diffX = e.changedTouches[0].screenX - touchStartX;
+  const diffY = e.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(diffY) > 130 || Math.abs(diffX) > 150) {
+    closeLightbox();
+  }
+}
 
 /* ===================== ROOM META PIPELINE ===================== */
 function trackRoomMetaTitle() {
@@ -472,10 +520,7 @@ function syncUsersCache() {
       document.getElementById('myAvatarDisplay').src = profileData.avatarUrl || fallbackUrl;
       document.getElementById('whoLine').textContent = profileData.name || currentUser.email;
     }
-    // Force rerender active layout to sync live profiles
-    if(currentUser && unsubMessages) {
-      forceMarkAsRead();
-    }
+    if(currentUser && unsubMessages) { forceMarkAsRead(); }
   });
 }
 
@@ -500,7 +545,7 @@ function handleLogin(){
   const errEl = document.getElementById('loginErr'); errEl.textContent = '';
   auth.signInWithEmailAndPassword(email, password).catch(err => errEl.textContent = err.message);
 }
-function doSignOut(){ shutdownListeners(); auth.signOut(); }
+function doSignOut(){ hangupCall(); shutdownListeners(); auth.signOut(); }
 
 auth.onAuthStateChanged(async (user) => {
   shutdownListeners();
@@ -535,7 +580,7 @@ function setupAppPortal(){
 function shutdownListeners(){
   if(unsubMessages) unsubMessages(); if(unsubPending) unsubPending();
   if(unsubCallDoc) unsubCallDoc(); if(unsubUserCache) unsubUserCache();
-  if(unsubRoomName) unsubRoomName();
+  if(unsubRoomName) unsubRoomName(); if(unsubIceCandidates) unsubIceCandidates();
 }
 
 /* ===================== GATEKEEPER CONTROL ===================== */
@@ -561,7 +606,7 @@ function monitorGatekeeping(){
 function grantAccess(id){ db.collection('users').doc(id).update({status:'approved'}); }
 function denyAccess(id){ db.collection('users').doc(id).delete(); }
 
-/* ===================== CHAT PIPELINE & UPGRADES ===================== */
+/* ===================== CHAT PIPELINE ===================== */
 function handleComposerKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function sendMessage(){
   const input = document.getElementById('msgInput'); const text = input.value.trim();
@@ -573,21 +618,21 @@ function sendMessage(){
   closeEmojiBox();
 }
 
-/* Upgraded Voice Interface Pipeline */
+/* Fixed Recording Pipeline */
 function startVoiceRecording() {
   navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     audioChunks = [];
-    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
     
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = () => {
-      if(audioChunks.length > 0) {
+      if (audioChunks.length > 0) {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         uploadFilePayload(audioBlob, 'voice-note.webm', 'audio');
       }
     };
 
-    mediaRecorder.start();
+    mediaRecorder.start(250);
     voiceDurationSeconds = 0;
     document.getElementById('voiceDurationTimer').textContent = "0:00";
     document.getElementById('voiceRecordOverlay').classList.add('active');
@@ -612,7 +657,7 @@ function stopAndSendVoice() {
 
 function cancelVoiceRecording() {
   if (mediaRecorder && mediaRecorder.state !== "inactive") {
-    audioChunks = []; // flush components to bypass save block trigger
+    audioChunks = [];
     mediaRecorder.stop();
     mediaRecorder.stream.getTracks().forEach(t => t.stop());
   }
@@ -644,10 +689,7 @@ function uploadFilePayload(fileData, fileName, mediaType, callback) {
   const formData = new FormData();
   formData.append('file', fileData, fileName);
 
-  fetch('https://tmpfiles.org/api/v1/upload', {
-    method: 'POST',
-    body: formData
-  })
+  fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData })
   .then(res => { if(!res.ok) throw new Error(); return res.json(); })
   .then(payload => {
     if(payload && payload.data && payload.data.url) {
@@ -655,14 +697,10 @@ function uploadFilePayload(fileData, fileName, mediaType, callback) {
       db.collection('messages').add({
         senderUid: currentUser.uid, text: '', mediaUrl: absoluteUrl, mediaType: mediaType, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
-    } else {
-      throw new Error();
     }
   })
-  .catch(() => alert('Upload process encountered a network error.'))
-  .finally(() => {
-    if(callback) callback();
-  });
+  .catch(() => alert('Upload failed due to an interface or network drop.'))
+  .finally(() => { if(callback) callback(); });
 }
 
 function forceMarkAsRead(){
@@ -682,49 +720,26 @@ function monitorChatChannel(){
       const m = doc.data(); const isMe = m.senderUid === currentUser.uid;
       if(!isMe && !m.seen) runReadExecution = true;
 
-      // Get profile name and custom avatar directly from live cache mapping updates
       const profile = cachedUsers[m.senderUid] || { name: 'Partner', avatarUrl: '' };
-      
       const row = document.createElement('div');
       row.className = `msg-row ${isMe ? 'mine':'theirs'}`;
 
       let profileImageMarkup = `<img src="${profile.avatarUrl || ''}" class="msg-avatar" alt="" onerror="handleAvatarError(this, '${escapeHtml(profile.name)}')" />`;
-
       let content = `<div class="msg-content-block"><span class="sender-label">${escapeHtml(profile.name)}</span><div class="msg">`;
       if(m.text) content += `<div>${escapeHtml(m.text)}</div>`;
       
       if(m.mediaUrl){
-        if(m.mediaType === 'image') content += `<img src="${m.mediaUrl}" onclick="window.open('${m.mediaUrl}','_blank')" style="cursor:zoom-in;" />`;
+        if(m.mediaType === 'image') content += `<img src="${m.mediaUrl}" onclick="openLightbox('${m.mediaUrl}')" style="cursor:zoom-in;" />`;
         else if(m.mediaType === 'video') content += `<video src="${m.mediaUrl}" controls playsinline></video>`;
         else if(m.mediaType === 'audio') content += `<audio src="${m.mediaUrl}" controls preload="auto"></audio>`;
         else content += `<a class="file-link" href="${m.mediaUrl}" target="_blank">🔗 Shared Resource</a>`;
       }
       
       const timeStr = m.timestamp ? m.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '•••';
-      
-      // Upgraded Custom Timings and Status Indicator Engine
-      let statusSign = '';
-      if(isMe){
-        if(!m.timestamp) {
-          statusSign = '<span class="status-stamp">⏳ Sent</span>';
-        } else if(m.seen) {
-          statusSign = `<span class="status-stamp" style="color:var(--gold);">✓✓ Seen</span>`;
-        } else {
-          // If the message is saved on the server but not seen, it counts as Delivered in a 2-person portal setup
-          statusSign = '<span class="status-stamp">✓✓ Delivered</span>';
-        }
-      } else {
-        statusSign = '<span class="status-stamp">✓ Received</span>';
-      }
+      let statusSign = isMe ? (m.seen ? `<span class="status-stamp" style="color:var(--gold);">✓✓ Seen</span>` : '<span class="status-stamp">✓✓ Delivered</span>') : '<span class="status-stamp">✓ Received</span>';
 
       content += `<div class="msg-meta-line"><span>${timeStr}</span> • ${statusSign}</div></div></div>`;
-      
-      if(isMe) {
-        row.innerHTML = content + profileImageMarkup;
-      } else {
-        row.innerHTML = profileImageMarkup + content;
-      }
-      
+      row.innerHTML = isMe ? (content + profileImageMarkup) : (profileImageMarkup + content);
       view.appendChild(row);
     });
     
@@ -733,37 +748,96 @@ function monitorChatChannel(){
   });
 }
 
-/* ===================== WEB RTC CALL SIGNALS LAYER ===================== */
+/* ===================== WEBRTC REAL-TIME CONNECTION ENGINE ===================== */
 function listenForCallSignals() {
-  unsubCallDoc = db.collection('calls').doc('global_room').onSnapshot(doc => {
-    if(!doc.exists) { toggleCallUI(false); return; }
+  unsubCallDoc = db.collection('calls').doc('global_room').onSnapshot(async doc => {
+    if(!doc.exists) { cleanUpWebRTCConnection(); toggleCallUI(false); return; }
     const data = doc.data();
+
     if(data.action === 'dialing' && data.callerId !== currentUser.uid) {
       const callerProfile = cachedUsers[data.callerId] || { name: "Someone" };
       document.getElementById('incomingText').textContent = `Encrypted Call from ${callerProfile.name}...`;
       document.getElementById('incomingBanner').classList.add('active');
-    } else if (data.action === 'active') {
+      currentCallTypeVideo = data.video;
+    } 
+    else if (data.action === 'active') {
       document.getElementById('incomingBanner').classList.remove('active');
       toggleCallUI(true, data.video);
+      
+      if (!isCallHost && !peerConnection) {
+        await setupPeerStreams(data.video);
+        const offer = data.offer;
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        await db.collection('calls').doc('global_room').update({ answer: { type: answer.type, sdp: answer.sdp } });
+      } else if (isCallHost && data.answer && peerConnection.signalingState === "have-local-offer") {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+      }
       document.getElementById('callStatus').textContent = "Secure connection active.";
-    } else if (data.action === 'hangup') {
+    } 
+    else if (data.action === 'hangup') {
       document.getElementById('incomingBanner').classList.remove('active');
+      cleanUpWebRTCConnection();
       toggleCallUI(false);
     }
   });
-}
 
-function initiateCall(videoOption) {
-  db.collection('calls').doc('global_room').set({
-    action: 'dialing', callerId: currentUser.uid, video: videoOption, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-  }).then(() => {
-    toggleCallUI(true, videoOption);
-    document.getElementById('callStatus').textContent = "Ringing partner line...";
+  unsubIceCandidates = db.collection('calls').doc('global_room').collection('candidates').onSnapshot(snap => {
+    snap.docChanges().forEach(async change => {
+      if (change.type === 'added' && peerConnection && peerConnection.remoteDescription) {
+        const candidateData = change.doc.data();
+        if (candidateData.senderUid !== currentUser.uid) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(candidateData.candidate));
+        }
+      }
+    });
   });
 }
 
-function answerIncomingCall() {
-  db.collection('calls').doc('global_room').update({ action: 'active' });
+async function setupPeerStreams(videoOptions) {
+  peerConnection = new RTCPeerConnection(rtcConfig);
+  localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoOptions });
+  
+  localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+  document.getElementById('localVideo').srcObject = localStream;
+
+  peerConnection.ontrack = e => {
+    document.getElementById('remoteVideo').srcObject = e.streams[0];
+  };
+
+  peerConnection.onicecandidate = e => {
+    if (e.candidate) {
+      db.collection('calls').doc('global_room').collection('candidates').add({
+        candidate: e.candidate.toJSON(), senderUid: currentUser.uid
+      });
+    }
+  };
+}
+
+async function initiateCall(videoOption) {
+  isCallHost = true;
+  currentCallTypeVideo = videoOption;
+  toggleCallUI(true, videoOption);
+  document.getElementById('callStatus').textContent = "Ringing partner line...";
+
+  const candRef = db.collection('calls').doc('global_room').collection('candidates');
+  const snap = await candRef.get(); snap.forEach(d => d.ref.delete());
+
+  await setupPeerStreams(videoOption);
+  const offer = await peerConnection.createOffer();
+  await peerConnection.setLocalDescription(offer);
+
+  await db.collection('calls').doc('global_room').set({
+    action: 'dialing', callerId: currentUser.uid, video: videoOption,
+    offer: { type: offer.type, sdp: offer.sdp }, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function answerIncomingCall() {
+  document.getElementById('incomingBanner').classList.remove('active');
+  isCallHost = false;
+  await db.collection('calls').doc('global_room').update({ action: 'active' });
 }
 
 function declineIncomingCall() {
@@ -774,13 +848,20 @@ function hangupCall() {
   db.collection('calls').doc('global_room').set({ action: 'hangup' });
 }
 
+function cleanUpWebRTCConnection() {
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
+  if (peerConnection) { peerConnection.close(); peerConnection = null; }
+  document.getElementById('localVideo').srcObject = null;
+  document.getElementById('remoteVideo').srcObject = null;
+  isCallHost = false;
+}
+
 function toggleCallUI(isActive, isVideo = false) {
   const overlay = document.getElementById('callOverlay');
   const partnerAvatar = document.getElementById('callPartnerAvatar');
   
   if(isActive) {
     overlay.classList.add('active');
-    // Identify who the call partner is to gather avatars cleanly
     let partnerId = Object.keys(cachedUsers).find(id => id !== currentUser.uid) || '';
     let partnerProfile = cachedUsers[partnerId] || { name: 'Partner', avatarUrl: '' };
     partnerAvatar.src = partnerProfile.avatarUrl || '';
@@ -801,12 +882,18 @@ function toggleCallUI(isActive, isVideo = false) {
 }
 
 function toggleMuteAudio() {
-  const btn = document.getElementById('muteBtn');
-  btn.style.background = btn.style.background === 'var(--danger)' ? 'var(--card)' : 'var(--danger)';
+  if(localStream && localStream.getAudioTracks().length > 0) {
+    const track = localStream.getAudioTracks()[0];
+    track.enabled = !track.enabled;
+    document.getElementById('muteBtn').style.background = track.enabled ? 'var(--card)' : 'var(--danger)';
+  }
 }
 function toggleCamVideo() {
-  const btn = document.getElementById('camBtn');
-  btn.style.background = btn.style.background === 'var(--danger)' ? 'var(--card)' : 'var(--danger)';
+  if(localStream && localStream.getVideoTracks().length > 0) {
+    const track = localStream.getVideoTracks()[0];
+    track.enabled = !track.enabled;
+    document.getElementById('camBtn').style.background = track.enabled ? 'var(--card)' : 'var(--danger)';
+  }
 }
 </script>
 </body>
