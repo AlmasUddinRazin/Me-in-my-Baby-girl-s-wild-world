@@ -26,6 +26,7 @@
     --muted: #9C8AA5;
     --border: rgba(232,193,112,0.16);
     --danger: #C97064;
+    --success: #64C9A2;
     --radius: 18px;
   }
 
@@ -80,6 +81,7 @@
   .icon-btn {
     width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
     background: var(--card); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.05rem;
+    position: relative;
   }
   .icon-btn:hover { border-color: var(--gold); }
   .icon-btn.recording { background: var(--danger); animation: pulse 1.2s infinite; color: #fff; }
@@ -90,7 +92,7 @@
   .msg-row.mine { align-self:flex-end; flex-direction: row-reverse; }
   .msg-row.theirs { align-self:flex-start; flex-direction: row; }
   
-  .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); background: #241C3A; flex-shrink: 0; }
+  .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gold); background: #241C3A; flex-shrink: 0; }
   .msg-content-block { display:flex; flex-direction:column; max-width: calc(100% - 42px); }
   .msg-row.mine .msg-content-block { align-items: flex-end; }
   .msg-row.theirs .msg-content-block { align-items: flex-start; }
@@ -100,59 +102,45 @@
   .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
   .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
   
-  .msg-meta-line { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:5px; font-size:0.65rem; opacity:0.8; }
-  .msg-row.mine .msg-meta-line { color: #3d2b28; }
+  .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:6px; margin-top:5px; font-size:0.65rem; width: 100%; }
+  .msg-row.mine .msg-meta-line { color: #3d2b28; opacity: 0.85; }
   .msg-row.theirs .msg-meta-line { color: var(--muted); }
+  .status-stamp { font-weight: 500; display: inline-flex; align-items: center; gap: 2px; }
 
-  .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:6px; display:block; object-fit: contain; background: rgba(0,0,0,0.15); }
+  .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:4px; display:block; object-fit: contain; background: rgba(0,0,0,0.15); }
   .msg audio { width:100%; margin-top:6px; display:block; min-width: 240px; }
 
   /* ---------- Composer & Universal Emoji Drawer ---------- */
   .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; position: relative; }
   
+  /* Voice Interface UI overlay container */
+  .voice-record-overlay {
+    position: absolute; inset: 0; background: var(--card-2); display: none;
+    align-items: center; justify-content: space-between; padding: 0 20px; z-index: 10;
+    border-top: 1px solid var(--danger);
+  }
+  .voice-record-overlay.active { display: flex; }
+  .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+  .voice-wave { display: flex; gap: 3px; align-items: center; height: 20px; }
+  .voice-wave span { width: 3px; height: 100%; background: var(--danger); animation: bounce-wave 0.8s infinite ease-in-out; border-radius: 2px; }
+  .voice-wave span:nth-child(2) { animation-delay: 0.2s; height: 70%; }
+  .voice-wave span:nth-child(3) { animation-delay: 0.4s; height: 40%; }
+  
+  @keyframes bounce-wave { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1.1); } }
+
   /* Built: Clean Universal Floating Emoji Drawer Box */
   .universal-emoji-box {
-    position: absolute;
-    bottom: 100%;
-    left: 16px;
-    width: 320px;
-    max-height: 220px;
-    background: var(--card-2);
-    border: 1px solid var(--gold);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    display: none;
-    flex-direction: column;
-    z-index: 99;
-    overflow: hidden;
+    position: absolute; bottom: 100%; left: 16px; width: 320px; max-height: 220px;
+    background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 99; overflow: hidden;
   }
   .universal-emoji-box.active { display: flex; }
   .emoji-box-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 12px;
-    background: rgba(0,0,0,0.2);
-    border-bottom: 1px solid var(--border);
-    font-size: 0.8rem;
-    color: var(--gold);
+    display: flex; justify-content: space-between; align-items: center; padding: 6px 12px;
+    background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--gold);
   }
-  .emoji-box-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    padding: 10px;
-    overflow-y: auto;
-    flex: 1;
-  }
-  .box-emoji-item {
-    font-size: 1.4rem;
-    cursor: pointer;
-    text-align: center;
-    padding: 4px;
-    border-radius: 6px;
-    transition: background 0.1s ease;
-  }
+  .emoji-box-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; overflow-y: auto; flex: 1; }
+  .box-emoji-item { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 4px; border-radius: 6px; transition: background 0.1s ease; }
   .box-emoji-item:hover { background: rgba(255,255,255,0.1); }
 
   .composer { display:flex; gap:8px; padding: 12px 16px; align-items:flex-end; }
@@ -244,6 +232,18 @@
     <div class="chat-area" id="chatArea" onclick="closeEmojiBox()"></div>
 
     <div class="composer-wrapper">
+      <!-- Voice Recording System Overlay UI -->
+      <div class="voice-record-overlay" id="voiceRecordOverlay">
+        <div class="voice-pulse-indicator">
+          <div class="voice-wave"><span></span><span></span><span></span></div>
+          <span>Recording Voice Note... </span><span id="voiceDurationTimer" style="margin-left: 5px; font-variant-numeric: tabular-nums;">0:00</span>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn small danger" style="border-radius:10px;" onclick="cancelVoiceRecording()">✕ Cancel</button>
+          <button class="btn small gold" style="border-radius:10px; background:linear-gradient(180deg, var(--success), #4fa885); color:#fff;" onclick="stopAndSendVoice()">⏹️ Send</button>
+        </div>
+      </div>
+
       <!-- Universal Floating Emoji Box Layout -->
       <div class="universal-emoji-box" id="universalEmojiBox">
         <div class="emoji-box-header">
@@ -255,7 +255,7 @@
 
       <div class="composer">
         <input type="file" id="hiddenFileInput" accept="image/*,video/*,audio/*" onchange="uploadDirectFile(this)" style="display:none;" />
-        <button class="icon-btn" id="voiceRecBtn" title="Record Voice Note" onclick="toggleVoiceRecording()">🎙️</button>
+        <button class="icon-btn" id="voiceRecBtn" title="Record Voice Note" onclick="startVoiceRecording()">🎙️</button>
         <button class="icon-btn" id="emojiToggleBtn" title="Open Emoji Box" onclick="toggleEmojiBox(event)">😀</button>
         <textarea id="msgInput" placeholder="Write into your private world..." rows="1" onkeydown="handleComposerKey(event)" onclick="closeEmojiBox()"></textarea>
         <button class="btn small gold" style="border-radius:12px; width:60px;" onclick="sendMessage()">Send</button>
@@ -338,9 +338,11 @@ let cachedUsers = {};
 let unsubMessages = null, unsubPending = null, unsubCallDoc = null, unsubUserCache = null, unsubRoomName = null;
 let isTabFocused = true;
 
+/* Upgraded Audio States */
 let mediaRecorder = null;
 let audioChunks = [];
-let isRecording = false;
+let voiceTimerInterval = null;
+let voiceDurationSeconds = 0;
 
 const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😐","😑","😬","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","👂","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","💋","🩸","❤️","✨","🔥","🌸"];
 
@@ -376,6 +378,13 @@ function triggerNativeGalleryPick() {
 function handleAvatarError(imgElement, displayName) {
   const parsedName = displayName || 'Us';
   imgElement.src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&font-size=0.4&name=${encodeURIComponent(parsedName)}`;
+}
+
+function escapeHtml(string) {
+  if(!string) return '';
+  return String(string).replace(/[&<>"']/g, function (s) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s];
+  });
 }
 
 function loadEmojiGrid() {
@@ -463,6 +472,10 @@ function syncUsersCache() {
       document.getElementById('myAvatarDisplay').src = profileData.avatarUrl || fallbackUrl;
       document.getElementById('whoLine').textContent = profileData.name || currentUser.email;
     }
+    // Force rerender active layout to sync live profiles
+    if(currentUser && unsubMessages) {
+      forceMarkAsRead();
+    }
   });
 }
 
@@ -548,7 +561,7 @@ function monitorGatekeeping(){
 function grantAccess(id){ db.collection('users').doc(id).update({status:'approved'}); }
 function denyAccess(id){ db.collection('users').doc(id).delete(); }
 
-/* ===================== CHAT PIPELINE & MULTIPART FIXES ===================== */
+/* ===================== CHAT PIPELINE & UPGRADES ===================== */
 function handleComposerKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function sendMessage(){
   const input = document.getElementById('msgInput'); const text = input.value.trim();
@@ -560,29 +573,55 @@ function sendMessage(){
   closeEmojiBox();
 }
 
-function toggleVoiceRecording() {
-  const recBtn = document.getElementById('voiceRecBtn');
-  if (!isRecording) {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      mediaRecorder = new MediaRecorder(stream);
-      audioChunks = [];
-      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
-      mediaRecorder.onstop = () => {
+/* Upgraded Voice Interface Pipeline */
+function startVoiceRecording() {
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    
+    mediaRecorder.onstop = () => {
+      if(audioChunks.length > 0) {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         uploadFilePayload(audioBlob, 'voice-note.webm', 'audio');
-      };
-      mediaRecorder.start();
-      isRecording = true;
-      recBtn.classList.add('recording');
-      recBtn.textContent = '⏹️';
-    }).catch(e => alert('Microphone setup failed: ' + e.message));
-  } else {
+      }
+    };
+
+    mediaRecorder.start();
+    voiceDurationSeconds = 0;
+    document.getElementById('voiceDurationTimer').textContent = "0:00";
+    document.getElementById('voiceRecordOverlay').classList.add('active');
+    
+    voiceTimerInterval = setInterval(() => {
+      voiceDurationSeconds++;
+      const mins = Math.floor(voiceDurationSeconds / 60);
+      const secs = voiceDurationSeconds % 60;
+      document.getElementById('voiceDurationTimer').textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }, 1000);
+
+  }).catch(e => alert('Microphone setup failed: ' + e.message));
+}
+
+function stopAndSendVoice() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
     mediaRecorder.stop();
     mediaRecorder.stream.getTracks().forEach(t => t.stop());
-    isRecording = false;
-    recBtn.classList.remove('recording');
-    recBtn.textContent = '🎙️';
   }
+  cleanupVoiceUI();
+}
+
+function cancelVoiceRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") {
+    audioChunks = []; // flush components to bypass save block trigger
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  cleanupVoiceUI();
+}
+
+function cleanupVoiceUI() {
+  clearInterval(voiceTimerInterval);
+  document.getElementById('voiceRecordOverlay').classList.remove('active');
 }
 
 function uploadDirectFile(el) {
@@ -601,7 +640,6 @@ function uploadDirectFile(el) {
   });
 }
 
-// Global Multipart Processing Pipeline for tmpfiles.org
 function uploadFilePayload(fileData, fileName, mediaType, callback) {
   const formData = new FormData();
   formData.append('file', fileData, fileName);
@@ -639,10 +677,12 @@ function monitorChatChannel(){
   unsubMessages = db.collection('messages').orderBy('timestamp','asc').onSnapshot(snap => {
     const view = document.getElementById('chatArea'); view.innerHTML = '';
     let runReadExecution = false;
+    
     snap.forEach(doc => {
       const m = doc.data(); const isMe = m.senderUid === currentUser.uid;
       if(!isMe && !m.seen) runReadExecution = true;
 
+      // Get profile name and custom avatar directly from live cache mapping updates
       const profile = cachedUsers[m.senderUid] || { name: 'Partner', avatarUrl: '' };
       
       const row = document.createElement('div');
@@ -652,194 +692,121 @@ function monitorChatChannel(){
 
       let content = `<div class="msg-content-block"><span class="sender-label">${escapeHtml(profile.name)}</span><div class="msg">`;
       if(m.text) content += `<div>${escapeHtml(m.text)}</div>`;
+      
       if(m.mediaUrl){
         if(m.mediaType === 'image') content += `<img src="${m.mediaUrl}" onclick="window.open('${m.mediaUrl}','_blank')" style="cursor:zoom-in;" />`;
         else if(m.mediaType === 'video') content += `<video src="${m.mediaUrl}" controls playsinline></video>`;
         else if(m.mediaType === 'audio') content += `<audio src="${m.mediaUrl}" controls preload="auto"></audio>`;
         else content += `<a class="file-link" href="${m.mediaUrl}" target="_blank">🔗 Shared Resource</a>`;
       }
+      
       const timeStr = m.timestamp ? m.timestamp.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '•••';
+      
+      // Upgraded Custom Timings and Status Indicator Engine
       let statusSign = '';
       if(isMe){
-        if(!m.timestamp) statusSign = '⏳';
-        else if(m.seen) statusSign = '✓✓ <span style="color:#E8C170;">Seen</span>';
-        else statusSign = '✓ Sent';
+        if(!m.timestamp) {
+          statusSign = '<span class="status-stamp">⏳ Sent</span>';
+        } else if(m.seen) {
+          statusSign = `<span class="status-stamp" style="color:var(--gold);">✓✓ Seen</span>`;
+        } else {
+          // If the message is saved on the server but not seen, it counts as Delivered in a 2-person portal setup
+          statusSign = '<span class="status-stamp">✓✓ Delivered</span>';
+        }
+      } else {
+        statusSign = '<span class="status-stamp">✓ Received</span>';
       }
-      content += `<div class="msg-meta-line"><span>${timeStr}</span><span>${statusSign}</span></div></div></div>`;
+
+      content += `<div class="msg-meta-line"><span>${timeStr}</span> • ${statusSign}</div></div></div>`;
       
-      row.innerHTML = isMe ? content + profileImageMarkup : profileImageMarkup + content;
+      if(isMe) {
+        row.innerHTML = content + profileImageMarkup;
+      } else {
+        row.innerHTML = profileImageMarkup + content;
+      }
+      
       view.appendChild(row);
     });
+    
     view.scrollTop = view.scrollHeight;
     if(runReadExecution) forceMarkAsRead();
   });
 }
-function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-/* ===================== WebRTC VIDEO/AUDIO SIGNALING ===================== */
-const CALL_SESSION_ID = "active_call_session";
-const iceConfiguration = { iceServers: [{ urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] }] };
-
-let peerConnection = null;
-let streamObject = null;
-let callOwner = false;
-
-function listenForCallSignals(){
-  db.collection('calls').doc(CALL_SESSION_ID).onSnapshot(doc => {
-    if(!doc.exists) return;
-    const call = doc.data();
-    if(call.status === 'ringing' && call.targetUid === currentUser.uid && !peerConnection){
-      const callerProfile = cachedUsers[call.senderUid] || { name: 'Your Partner' };
-      document.getElementById('incomingText').textContent = `Encrypted ${call.isVideo ? 'video' : 'voice'} call from ${callerProfile.name}...`;
+/* ===================== WEB RTC CALL SIGNALS LAYER ===================== */
+function listenForCallSignals() {
+  unsubCallDoc = db.collection('calls').doc('global_room').onSnapshot(doc => {
+    if(!doc.exists) { toggleCallUI(false); return; }
+    const data = doc.data();
+    if(data.action === 'dialing' && data.callerId !== currentUser.uid) {
+      const callerProfile = cachedUsers[data.callerId] || { name: "Someone" };
+      document.getElementById('incomingText').textContent = `Encrypted Call from ${callerProfile.name}...`;
       document.getElementById('incomingBanner').classList.add('active');
-    }
-    if(call.status === 'ended'){
+    } else if (data.action === 'active') {
       document.getElementById('incomingBanner').classList.remove('active');
-      if(peerConnection) teardownActiveCallInterface(false);
+      toggleCallUI(true, data.video);
+      document.getElementById('callStatus').textContent = "Secure connection active.";
+    } else if (data.action === 'hangup') {
+      document.getElementById('incomingBanner').classList.remove('active');
+      toggleCallUI(false);
     }
   });
 }
 
-async function captureMedia(videoRequired){
-  return navigator.mediaDevices.getUserMedia({
-    video: videoRequired,
-    audio: { echoCancellation: true, noiseSuppression: true }
+function initiateCall(videoOption) {
+  db.collection('calls').doc('global_room').set({
+    action: 'dialing', callerId: currentUser.uid, video: videoOption, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    toggleCallUI(true, videoOption);
+    document.getElementById('callStatus').textContent = "Ringing partner line...";
   });
 }
 
-async function initiateCall(videoEnabled){
-  if(peerConnection) return;
+function answerIncomingCall() {
+  db.collection('calls').doc('global_room').update({ action: 'active' });
+}
+
+function declineIncomingCall() {
+  db.collection('calls').doc('global_room').set({ action: 'hangup' });
+}
+
+function hangupCall() {
+  db.collection('calls').doc('global_room').set({ action: 'hangup' });
+}
+
+function toggleCallUI(isActive, isVideo = false) {
+  const overlay = document.getElementById('callOverlay');
+  const partnerAvatar = document.getElementById('callPartnerAvatar');
   
-  let partnerUid = "";
-  for(let id in cachedUsers) { if(id !== currentUser.uid) partnerUid = id; }
+  if(isActive) {
+    overlay.classList.add('active');
+    // Identify who the call partner is to gather avatars cleanly
+    let partnerId = Object.keys(cachedUsers).find(id => id !== currentUser.uid) || '';
+    let partnerProfile = cachedUsers[partnerId] || { name: 'Partner', avatarUrl: '' };
+    partnerAvatar.src = partnerProfile.avatarUrl || '';
+    handleAvatarError(partnerAvatar, partnerProfile.name);
 
-  callOwner = true;
-  try {
-    streamObject = await captureMedia(videoEnabled);
-  } catch(e) { alert('Media permissions missing: ' + e.message); return; }
-
-  displayCallOverlay(videoEnabled, partnerUid);
-  peerConnection = new RTCPeerConnection(iceConfiguration);
-  streamObject.getTracks().forEach(track => peerConnection.addTrack(track, streamObject));
-
-  const foreignStream = new MediaStream();
-  document.getElementById('remoteVideo').srcObject = foreignStream;
-  peerConnection.ontrack = ev => ev.streams[0].getTracks().forEach(track => foreignStream.addTrack(track));
-
-  const sessionDoc = db.collection('calls').doc(CALL_SESSION_ID);
-  const outboundCandidates = sessionDoc.collection('callerCandidates');
-  const inboundCandidates = sessionDoc.collection('calleeCandidates');
-
-  await removeSubcollectionDocs(outboundCandidates);
-  await removeSubcollectionDocs(inboundCandidates);
-
-  peerConnection.onicecandidate = ev => { if(ev.candidate) outboundCandidates.add(ev.candidate.toJSON()); };
-
-  const offerDesc = await peerConnection.createOffer();
-  await peerConnection.setLocalDescription(offerDesc);
-
-  await sessionDoc.set({
-    senderUid: currentUser.uid, targetUid: partnerUid,
-    isVideo: videoEnabled, status: 'ringing',
-    offer: { type: offerDesc.type, sdp: offerDesc.sdp }, answer: null
-  });
-
-  document.getElementById('callStatus').textContent = 'Ringing...';
-
-  const unsubSession = sessionDoc.onSnapshot(snap => {
-    const state = snap.data();
-    if(state && state.answer && peerConnection && !peerConnection.currentRemoteDescription){
-      peerConnection.setRemoteDescription(new RTCSessionDescription(state.answer));
-      document.getElementById('callStatus').textContent = 'Secure Connected';
+    if(isVideo) {
+      document.getElementById('audioOnlyStage').style.display = 'none';
+      document.getElementById('remoteVideo').style.display = 'block';
+      document.getElementById('localVideo').style.display = 'block';
+    } else {
+      document.getElementById('audioOnlyStage').style.display = 'flex';
+      document.getElementById('remoteVideo').style.display = 'none';
+      document.getElementById('localVideo').style.display = 'none';
     }
-    if(!state || state.status === 'ended') {
-      unsubSession();
-      teardownActiveCallInterface(false);
-    }
-  });
-
-  inboundCandidates.onSnapshot(snap => {
-    snap.docChanges().forEach(c => {
-      if(c.type === 'added' && peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(c.doc.data()));
-    });
-  });
-}
-
-async function answerIncomingCall(){
-  document.getElementById('incomingBanner').classList.remove('active');
-  callOwner = false;
-  const sessionDoc = db.collection('calls').doc(CALL_SESSION_ID);
-  const data = (await sessionDoc.get()).data();
-  if(!data) return;
-
-  try {
-    streamObject = await captureMedia(data.isVideo);
-  } catch(e) { alert('Failed to pull local feeds: ' + e.message); declineIncomingCall(); return; }
-
-  displayCallOverlay(data.isVideo, data.senderUid);
-  peerConnection = new RTCPeerConnection(iceConfiguration);
-  streamObject.getTracks().forEach(track => peerConnection.addTrack(track, streamObject));
-
-  const foreignStream = new MediaStream();
-  document.getElementById('remoteVideo').srcObject = foreignStream;
-  peerConnection.ontrack = ev => ev.streams[0].getTracks().forEach(track => foreignStream.addTrack(track));
-
-  const outboundCandidates = sessionDoc.collection('callerCandidates');
-  const inboundCandidates = sessionDoc.collection('calleeCandidates');
-
-  peerConnection.onicecandidate = ev => { if(ev.candidate) inboundCandidates.add(ev.candidate.toJSON()); };
-
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-  const answerDesc = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(answerDesc);
-
-  await sessionDoc.update({ answer: { type: answerDesc.type, sdp: answerDesc.sdp }, status: 'connected' });
-  document.getElementById('callStatus').textContent = 'Secure Connected';
-
-  outboundCandidates.onSnapshot(snap => {
-    snap.docChanges().forEach(c => {
-      if(c.type === 'added' && peerConnection) peerConnection.addIceCandidate(new RTCIceCandidate(c.doc.data()));
-    });
-  });
-}
-
-function declineIncomingCall(){
-  document.getElementById('incomingBanner').classList.remove('active');
-  db.collection('calls').doc(CALL_SESSION_ID).set({ status: 'ended' }, { merge: true }).catch(()=>{});
-}
-function hangupCall(){ teardownActiveCallInterface(true); }
-
-function teardownActiveCallInterface(broadcastTermination){
-  if(broadcastTermination){
-    db.collection('calls').doc(CALL_SESSION_ID).set({ status: 'ended' }, { merge: true }).catch(()=>{});
+  } else {
+    overlay.classList.remove('active');
   }
-  if(peerConnection){ try{ peerConnection.close(); }catch(e){} peerConnection = null; }
-  if(streamObject){ streamObject.getTracks().forEach(track => track.stop()); streamObject = null; }
-  document.getElementById('callOverlay').classList.remove('active');
-  document.getElementById('incomingBanner').classList.remove('active');
 }
 
-function displayCallOverlay(isVideo, remoteUid){
-  document.getElementById('callOverlay').classList.add('active');
-  document.getElementById('localVideo').srcObject = streamObject;
-  document.getElementById('localVideo').style.display = isVideo ? 'block' : 'none';
-  document.getElementById('audioOnlyStage').style.display = isVideo ? 'none' : 'flex';
-
-  const partnerProfile = cachedUsers[remoteUid] || {};
-  document.getElementById('callPartnerAvatar').src = partnerProfile.avatarUrl || '';
-  handleAvatarError(document.getElementById('callPartnerAvatar'), partnerProfile.name || 'Call');
+function toggleMuteAudio() {
+  const btn = document.getElementById('muteBtn');
+  btn.style.background = btn.style.background === 'var(--danger)' ? 'var(--card)' : 'var(--danger)';
 }
-
-function toggleMuteAudio(){
-  if(!streamObject) return; const t = streamObject.getAudioTracks()[0];
-  if(t) { t.enabled = !t.enabled; document.getElementById('muteBtn').textContent = t.enabled ? '🎙️':'🔇'; }
-}
-function toggleCamVideo(){
-  if(!streamObject) return; const t = streamObject.getVideoTracks()[0];
-  if(t) { t.enabled = !t.enabled; document.getElementById('camBtn').textContent = t.enabled ? '🎥':'📷'; }
-}
-async function removeSubcollectionDocs(ref){
-  const snap = await ref.get(); const batch = db.batch(); snap.forEach(d => batch.delete(d.ref)); await batch.commit();
+function toggleCamVideo() {
+  const btn = document.getElementById('camBtn');
+  btn.style.background = btn.style.background === 'var(--danger)' ? 'var(--card)' : 'var(--danger)';
 }
 </script>
 </body>
