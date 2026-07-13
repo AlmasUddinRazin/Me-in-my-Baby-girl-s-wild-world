@@ -39,7 +39,7 @@
   .screen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
   .screen.active { display:flex; }
 
-  /* ---------- Auth Portal ---------- */
+  /* ---------- Auth Portal Layout ---------- */
   .auth-card {
     width:100%; max-width:400px; background: linear-gradient(180deg, var(--card), var(--card-2));
     border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 34px; text-align:center; box-shadow: 0 30px 60px rgba(0,0,0,0.35);
@@ -47,7 +47,7 @@
   .auth-card h1 { font-size:2.1rem; margin: 0 0 6px; color: var(--gold); }
   .field { text-align:left; margin-bottom:16px; }
   .field label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
-  .field input, .field select {
+  .field input {
     width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
     background: rgba(0,0,0,0.25); color:var(--text); font-family:'Inter'; font-size:0.95rem;
   }
@@ -59,6 +59,7 @@
   .btn.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
   .btn.danger { background: linear-gradient(180deg, var(--danger), #a9483d); color:#fff; }
   .btn.small { width:auto; padding:6px 12px; font-size:0.8rem; }
+  .err { color: var(--danger); font-size:0.82rem; margin-bottom:14px; text-align:left; }
 
   /* ---------- App Structure ---------- */
   #appScreen { align-items:stretch; padding:0; }
@@ -120,15 +121,35 @@
 <div id="authScreen" class="screen active">
   <div class="auth-card">
     <h1>Our Wild World</h1>
-    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Choose your identity to initialize the safe-room.</p>
-    <div class="field">
-      <label>Who are you?</label>
-      <select id="identitySelect">
-        <option value="Partner A">Partner A</option>
-        <option value="Partner B">Partner B</option>
-      </select>
+    <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Secure Vault Authorization Required.</p>
+    
+    <div id="loginForm">
+      <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
+      <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
+      <div class="err" id="authErr"></div>
+      <button class="btn gold" id="authSubmitBtn" onclick="handleAuthentication()">Enter Space</button>
+      <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+        Need access? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(true)">Request Registration</a>
+      </p>
     </div>
-    <button class="btn gold" onclick="initializePortal()">Enter Safe Space</button>
+
+    <div id="registerForm" style="display:none;">
+      <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
+      <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
+      <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
+      <button class="btn" onclick="handleRegistration()">Submit Application</button>
+      <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+        Already registered? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(false)">Sign In</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<div id="pendingScreen" class="screen">
+  <div class="auth-card">
+    <h1>Awaiting Access Keys</h1>
+    <p style="color:var(--muted); line-height:1.5;">Your secure account is pending portal authorization. The supervisor must approve your entry profile.</p>
+    <button class="btn ghost" style="margin-top:20px;" onclick="signOutSession()">Disconnect Session</button>
   </div>
 </div>
 
@@ -142,7 +163,7 @@
       <div style="display:flex; gap:8px;">
         <button class="icon-btn" title="Voice Call" onclick="makePeerCall(false)">📞</button>
         <button class="icon-btn" title="Video Call" onclick="makePeerCall(true)">🎥</button>
-        <button class="icon-btn" onclick="logoutPortal()">⏻</button>
+        <button class="icon-btn" onclick="signOutSession()">⏻</button>
       </div>
     </div>
 
@@ -198,13 +219,12 @@
 <script>
 /* ===================== CONFIGURATION PANELS ===================== */
 const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co";
-// NOTE: Make sure to replace this with the 'anon public' key from your settings dashboard if this yields authentication errors
 const SUPABASE_KEY = "sb_publishable_7twezkpUBi7nKZ_vRf5RDg_v5w_hAex"; 
 
 const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let myUser = null; 
-let partnerUser = null;
+let currentUser = null; 
+let cachedProfiles = {};
 let peer = null;
 let currentCall = null;
 let localStream = null;
@@ -213,7 +233,6 @@ let audioChunks = [];
 let isRecording = false;
 let selectedPostFile = null;
 
-// Ringtone generation engine using standard Web Audio API (No files needed!)
 let audioCtx = null;
 let ringtoneInterval = null;
 
@@ -237,39 +256,97 @@ function stopRingtoneLoop() {
   if (ringtoneInterval) { clearInterval(ringtoneInterval); ringtoneInterval = null; }
 }
 
-/* ===================== CORE PORTAL ROUTING ===================== */
-function initializePortal() {
-  myUser = document.getElementById('identitySelect').value;
-  partnerUser = (myUser === "Partner A") ? "Partner B" : "Partner A";
+/* ===================== SECURE ENCRYPTED AUTH PIPELINE ===================== */
+function toggleAuthMode(toRegister) {
+  document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
+  document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
+}
+
+async function handleAuthentication() {
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authErr');
+  errEl.textContent = "";
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) { errEl.textContent = error.message; return; }
   
-  document.getElementById('identityLine').textContent = `Logged in as: ${myUser}`;
-  document.getElementById('authScreen').classList.remove('active');
-  document.getElementById('appScreen').classList.add('active');
+  checkSessionState(data.user);
+}
 
-  // Initialize unified PeerJS Core Engine mapped cleanly to their identities
-  const explicitPeerId = myUser.toLowerCase().replace(" ", "-");
-  peer = new Peer(explicitPeerId);
+async function handleRegistration() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if(error) { alert(error.message); return; }
+  
+  if(data.user) {
+    // Inject profile descriptor mapping directly down into custom secure table
+    await supabase.from('profiles').insert([{ id: data.user.id, name: name, status: 'pending' }]);
+    alert("Application submitted! Contact portal admin for authorization.");
+    toggleAuthMode(false);
+  }
+}
 
-  peer.on('open', (id) => {
-    console.log("Secure calling session mounted at ID: ", id);
-  });
+async function checkSessionState(user) {
+  if (!user) return;
+  currentUser = user;
 
-  // Catch Incoming Calls Cleanly with hardware triggers
+  const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+  
+  if (!profile || profile.status !== 'approved') {
+    showScreen('pendingScreen');
+    return;
+  }
+
+  initializePortal(profile);
+}
+
+// Intercept security session state updates seamlessly
+supabase.auth.onAuthStateChange((event, session) => {
+  if (session && session.user) {
+    checkSessionState(session.user);
+  } else {
+    showScreen('authScreen');
+  }
+});
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+async function signOutSession() {
+  if(peer) peer.destroy();
+  await supabase.auth.signOut();
+  location.reload();
+}
+
+/* ===================== PORTAL SYSTEM RUNTIME ===================== */
+async function initializePortal(myProfile) {
+  document.getElementById('identityLine').textContent = `Authenticated as: ${myProfile.name}`;
+  showScreen('appScreen');
+
+  // Load user profiles structure cache
+  const { data: profiles } = await supabase.from('profiles').select('*');
+  if(profiles) {
+    profiles.forEach(p => cachedProfiles[p.id] = p);
+  }
+
+  // Mount PeerJS Engine directly to their true User UUID string
+  peer = new Peer(currentUser.id);
+
   peer.on('call', (incomingCall) => {
     currentCall = incomingCall;
     playRingtoneLoop();
     document.getElementById('incomingBanner').classList.add('active');
   });
 
-  // Turn on live realtime subscriptions
   fetchChatHistory();
   fetchTimelinePosts();
   subscribeToUpdates();
-}
-
-function logoutPortal() {
-  if(peer) peer.destroy();
-  location.reload();
 }
 
 function switchTab(target) {
@@ -285,9 +362,9 @@ function switchTab(target) {
   }
 }
 
-/* ===================== WHATSAPP STYLE CHAT STORAGE ===================== */
+/* ===================== WHATSAPP STYLE CHAT ===================== */
 async function fetchChatHistory() {
-  const { data, error } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
+  const { data } = await supabase.from('messages').select('*').order('created_at', { ascending: true });
   if (data) {
     const chatArea = document.getElementById('chatArea');
     chatArea.innerHTML = '';
@@ -298,7 +375,8 @@ async function fetchChatHistory() {
 
 function renderMessageBubble(msg) {
   const chatArea = document.getElementById('chatArea');
-  const isMe = msg.sender_uid === myUser;
+  const isMe = msg.sender_uid === currentUser.id;
+  const profile = cachedProfiles[msg.sender_uid] || { name: 'Encrypted User' };
   
   const row = document.createElement('div');
   row.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
@@ -312,7 +390,7 @@ function renderMessageBubble(msg) {
 
   row.innerHTML = `
     <div class="msg">
-      <div style="font-weight:700; font-size:0.75rem; margin-bottom:2px; color:var(--gold);">${msg.sender_name}</div>
+      <div style="font-weight:700; font-size:0.75rem; margin-bottom:2px; color:var(--gold);">${profile.name}</div>
       ${msg.text ? `<div>${msg.text}</div>` : ''}
       ${mediaMarkup}
       <div class="msg-meta">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
@@ -327,30 +405,18 @@ async function sendTextMessage() {
   const txt = input.value.trim();
   if(!txt) return;
 
-  await supabase.from('messages').insert([
-    { sender_uid: myUser, sender_name: myUser, text: txt }
-  ]);
+  await supabase.from('messages').insert([{ sender_uid: currentUser.id, text: txt }]);
   input.value = '';
 }
 
-/* Permanent Storage Upload Flow */
 async function uploadToSupabaseBucket(fileObject) {
   const fileExt = fileObject.name.split('.').pop();
   const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
   
-  const { data, error } = await supabase.storage
-    .from('wild-world-media')
-    .upload(uniqueFileName, fileObject);
-
-  if (error) {
-    alert("Storage uploading failed: " + error.message);
-    return null;
-  }
+  const { data, error } = await supabase.storage.from('wild-world-media').upload(uniqueFileName, fileObject);
+  if (error) { alert("Storage failed: " + error.message); return null; }
   
-  const { data: publicUrlData } = supabase.storage
-    .from('wild-world-media')
-    .getPublicUrl(uniqueFileName);
-
+  const { data: publicUrlData } = supabase.storage.from('wild-world-media').getPublicUrl(uniqueFileName);
   return publicUrlData.publicUrl;
 }
 
@@ -364,14 +430,11 @@ async function handleChatUpload(inputElement) {
 
   const generatedUrl = await uploadToSupabaseBucket(file);
   if(generatedUrl) {
-    await supabase.from('messages').insert([
-      { sender_uid: myUser, sender_name: myUser, media_url: generatedUrl, media_type: mediaType }
-    ]);
+    await supabase.from('messages').insert([{ sender_uid: currentUser.id, media_url: generatedUrl, media_type: mediaType }]);
   }
   inputElement.value = '';
 }
 
-/* Fixed Audio Blob Recording Compilation Framework */
 function toggleVoiceRecording() {
   const recBtn = document.getElementById('voiceRecBtn');
   if (!isRecording) {
@@ -384,9 +447,7 @@ function toggleVoiceRecording() {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const generatedUrl = await uploadToSupabaseBucket(new File([audioBlob], "voice-note.webm"));
         if(generatedUrl) {
-          await supabase.from('messages').insert([
-            { sender_uid: myUser, sender_name: myUser, media_url: generatedUrl, media_type: 'audio' }
-          ]);
+          await supabase.from('messages').insert([{ sender_uid: currentUser.id, media_url: generatedUrl, media_type: 'audio' }]);
         }
       };
 
@@ -406,16 +467,17 @@ function toggleVoiceRecording() {
 
 /* ===================== FACEBOOK STYLE TIMELINE FEED ===================== */
 async function fetchTimelinePosts() {
-  const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+  const { data } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
   if (data) {
     const feed = document.getElementById('timelineFeed');
     feed.innerHTML = '';
     data.forEach(post => {
+      const profile = cachedProfiles[post.sender_uid] || { name: 'System User' };
       const card = document.createElement('div');
       card.className = 'post-card';
       card.innerHTML = `
         <div class="post-header">
-          <div class="post-author">${post.sender_name}</div>
+          <div class="post-author">${profile.name}</div>
           <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
         </div>
         <div class="post-body">${post.text || ''}</div>
@@ -428,32 +490,24 @@ async function fetchTimelinePosts() {
 
 function handlePostFileSelected(el) {
   selectedPostFile = el.files[0];
-  if(selectedPostFile) {
-    document.getElementById('postFileBtn').textContent = "✅ Photo Attached";
-  }
+  if(selectedPostFile) { document.getElementById('postFileBtn').textContent = "✅ Photo Attached"; }
 }
 
 async function submitTimelinePost() {
   const textInput = document.getElementById('postText');
   const text = textInput.value.trim();
-  
   if(!text && !selectedPostFile) return;
   
   let mediaUrl = null;
-  if(selectedPostFile) {
-    mediaUrl = await uploadToSupabaseBucket(selectedPostFile);
-  }
+  if(selectedPostFile) mediaUrl = await uploadToSupabaseBucket(selectedPostFile);
 
-  await supabase.from('posts').insert([
-    { sender_uid: myUser, sender_name: myUser, text: text, media_url: mediaUrl }
-  ]);
-
+  await supabase.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
   textInput.value = '';
   selectedPostFile = null;
   document.getElementById('postFileBtn').textContent = "📸 Add Photo";
 }
 
-/* ===================== PEERJS WEBRTC REAL HARDWARE CALL ENGINE ===================== */
+/* ===================== PEERJS NATIVE HARDWARE CALLING ENG ===================== */
 async function makePeerCall(wantsVideo) {
   playRingtoneLoop();
   document.getElementById('callStatusMessage').textContent = "Ringing partner line...";
@@ -463,15 +517,16 @@ async function makePeerCall(wantsVideo) {
   document.getElementById('localVideo').srcObject = localStream;
   document.getElementById('localVideo').style.display = wantsVideo ? 'block' : 'none';
 
-  const targetId = partnerUser.toLowerCase().replace(" ", "-");
-  currentCall = peer.call(targetId, localStream);
+  // Find the other partner's UUID inside the cached profile set
+  const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+  if(!partnerId) { alert("Partner profile not found online yet."); hangupActiveCall(); return; }
 
+  currentCall = peer.call(partnerId, localStream);
   currentCall.on('stream', (remoteStream) => {
     stopRingtoneLoop();
-    document.getElementById('callStatusMessage').textContent = "Secure Connection Active";
+    document.getElementById('callStatusMessage').textContent = "Encrypted Link Active";
     document.getElementById('remoteVideo').srcObject = remoteStream;
   });
-
   currentCall.on('close', () => { hangupActiveCall(); });
 }
 
@@ -480,7 +535,6 @@ async function acceptIncomingCall() {
   document.getElementById('incomingBanner').classList.remove('active');
   document.getElementById('callOverlay').classList.add('active');
 
-  // Automatically check option properties from incoming stream configurations
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
   document.getElementById('localVideo').srcObject = localStream;
 
@@ -488,7 +542,6 @@ async function acceptIncomingCall() {
   currentCall.on('stream', (remoteStream) => {
     document.getElementById('remoteVideo').srcObject = remoteStream;
   });
-
   currentCall.on('close', () => { hangupActiveCall(); });
 }
 
@@ -504,8 +557,6 @@ function hangupActiveCall() {
   document.getElementById('callOverlay').classList.remove('active');
 
   if(currentCall) { currentCall.close(); currentCall = null; }
-  
-  // Cleanly shut down camera and microphone hardware instantly
   if (localStream) {
     localStream.getTracks().forEach(track => track.stop());
     localStream = null;
@@ -514,15 +565,10 @@ function hangupActiveCall() {
   document.getElementById('remoteVideo').srcObject = null;
 }
 
-/* Realtime Sync Pipe Synchronization Engine */
 function subscribeToUpdates() {
   supabase.channel('room-changes')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-      renderMessageBubble(payload.new);
-    })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => {
-      fetchTimelinePosts();
-    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { renderMessageBubble(payload.new); })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
     .subscribe();
 }
 </script>
