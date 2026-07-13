@@ -262,9 +262,11 @@
 </div>
 
 <script>
+// --- GLOBAL INITIALIZATION CONFIGURATION ---
 const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
 
+// Single proper initialization of the client object
 const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥰","😘","❤️","✨","🔥","🌸"];
 
@@ -322,10 +324,8 @@ async function checkSessionState(user) {
 }
 
 supabase.auth.onAuthStateChange((event, session) => {
-  (async () => {
-    if (session && session.user) checkSessionState(session.user);
-    else showScreen('authScreen');
-  })();
+  if (session && session.user) checkSessionState(session.user);
+  else showScreen('authScreen');
 });
 
 function showScreen(id) {
