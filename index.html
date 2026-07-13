@@ -64,7 +64,7 @@
 
   /* ---------- Main Application Window ---------- */
   #appScreen { align-items:stretch; padding:0; }
-  .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; }
+  .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; position: relative; }
   .topbar {
     display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
     border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px);
@@ -107,23 +107,54 @@
   .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:6px; display:block; object-fit: contain; background: rgba(0,0,0,0.15); }
   .msg audio { width:100%; margin-top:6px; display:block; min-width: 240px; }
 
-  /* ---------- Composer & Fix Emoji Dock Box ---------- */
-  .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; }
+  /* ---------- Composer & Universal Emoji Drawer ---------- */
+  .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; position: relative; }
   
-  /* Fix: Created a proper non-breaking grid emoji box wrapper */
-  .utility-tray { 
-    display: flex; 
-    flex-wrap: wrap; 
-    gap: 8px; 
-    padding: 10px; 
-    background: rgba(0, 0, 0, 0.3); 
-    max-height: 75px; 
-    overflow-y: auto; 
-    border-bottom: 1px solid rgba(232,193,112,0.08); 
+  /* Built: Clean Universal Floating Emoji Drawer Box */
+  .universal-emoji-box {
+    position: absolute;
+    bottom: 100%;
+    left: 16px;
+    width: 320px;
+    max-height: 220px;
+    background: var(--card-2);
+    border: 1px solid var(--gold);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: none;
+    flex-direction: column;
+    z-index: 99;
+    overflow: hidden;
   }
-  .tray-emoji { font-size: 1.35rem; cursor: pointer; padding: 3px; border-radius: 6px; display: inline-block; transition: transform 0.1s ease; }
-  .tray-emoji:hover { background: rgba(255,255,255,0.15); transform: scale(1.15); }
-  
+  .universal-emoji-box.active { display: flex; }
+  .emoji-box-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.2);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.8rem;
+    color: var(--gold);
+  }
+  .emoji-box-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    padding: 10px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .box-emoji-item {
+    font-size: 1.4rem;
+    cursor: pointer;
+    text-align: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background 0.1s ease;
+  }
+  .box-emoji-item:hover { background: rgba(255,255,255,0.1); }
+
   .composer { display:flex; gap:8px; padding: 12px 16px; align-items:flex-end; }
   .composer textarea {
     flex:1; resize:none; max-height:100px; padding:12px 14px; border-radius:14px;
@@ -210,16 +241,23 @@
       </div>
     </div>
 
-    <div class="chat-area" id="chatArea"></div>
+    <div class="chat-area" id="chatArea" onclick="closeEmojiBox()"></div>
 
     <div class="composer-wrapper">
-      <div class="utility-tray" id="emojiTrayContainer">
-        <!-- Expanded Emoji Pack -->
+      <!-- Universal Floating Emoji Box Layout -->
+      <div class="universal-emoji-box" id="universalEmojiBox">
+        <div class="emoji-box-header">
+          <span>Select Emoji</span>
+          <span style="cursor:pointer; font-weight:bold;" onclick="closeEmojiBox()">✕</span>
+        </div>
+        <div class="emoji-box-grid" id="emojiGridContainer"></div>
       </div>
+
       <div class="composer">
-        <input type="file" id="hiddenFileInput" accept="image/*,video/*" onchange="uploadDirectFile(this)" style="display:none;" />
+        <input type="file" id="hiddenFileInput" accept="image/*,video/*,audio/*" onchange="uploadDirectFile(this)" style="display:none;" />
         <button class="icon-btn" id="voiceRecBtn" title="Record Voice Note" onclick="toggleVoiceRecording()">🎙️</button>
-        <textarea id="msgInput" placeholder="Write into your private world..." rows="1" onkeydown="handleComposerKey(event)"></textarea>
+        <button class="icon-btn" id="emojiToggleBtn" title="Open Emoji Box" onclick="toggleEmojiBox(event)">😀</button>
+        <textarea id="msgInput" placeholder="Write into your private world..." rows="1" onkeydown="handleComposerKey(event)" onclick="closeEmojiBox()"></textarea>
         <button class="btn small gold" style="border-radius:12px; width:60px;" onclick="sendMessage()">Send</button>
       </div>
     </div>
@@ -304,8 +342,7 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-// Requested Custom Emoji Set
-const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","🙂‍↕️","😏","😒","🙂‍↔️","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😶‍🌫️","😐","😑","😬","🫨","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🫩","🤤","😪","😵","😵‍💫","🫥","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","🫱","🫲","🫸","🫷","🫳","🫴","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦿","🦶","👣","🫆","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","💋","🩸","❤️","✨","🔥","🌸"];
+const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","😏","😒","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😐","😑","😬","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🤤","😪","😵","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","👂","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","💋","🩸","❤️","✨","🔥","🌸"];
 
 window.addEventListener('focus', () => { isTabFocused = true; forceMarkAsRead(); });
 window.addEventListener('blur', () => { isTabFocused = false; });
@@ -316,30 +353,46 @@ function showScreen(id){
 }
 function showSignup(){ document.getElementById('loginForm').style.display='none'; document.getElementById('signupForm').style.display='block'; }
 function showLogin(){ document.getElementById('signupForm').style.display='none'; document.getElementById('loginForm').style.display='block'; }
-function insertEmoji(em) { const tx = document.getElementById('msgInput'); tx.value += em; tx.focus(); }
+
+/* ---------- Toggleable Emoji Drawer Box Logic ---------- */
+function toggleEmojiBox(e) {
+  e.stopPropagation();
+  const box = document.getElementById('universalEmojiBox');
+  box.classList.toggle('active');
+}
+function closeEmojiBox() {
+  document.getElementById('universalEmojiBox').classList.remove('active');
+}
+function insertEmoji(em) {
+  const tx = document.getElementById('msgInput');
+  tx.value += em;
+  tx.focus();
+}
 
 function triggerNativeGalleryPick() {
   document.getElementById('hiddenFileInput').click();
 }
 
-// Global Avatar Error Fallback Handler to prevent broken image layout
 function handleAvatarError(imgElement, displayName) {
   const parsedName = displayName || 'Us';
   imgElement.src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&font-size=0.4&name=${encodeURIComponent(parsedName)}`;
 }
 
-function loadEmojiTray() {
-  const container = document.getElementById('emojiTrayContainer');
+function loadEmojiGrid() {
+  const container = document.getElementById('emojiGridContainer');
   container.innerHTML = '';
   emojiPack.forEach(emoji => {
-    const el = document.createElement('span');
-    el.className = 'tray-emoji';
+    const el = document.createElement('div');
+    el.className = 'box-emoji-item';
     el.textContent = emoji; 
-    el.onclick = () => insertEmoji(el.textContent);
+    el.onclick = (e) => {
+      e.stopPropagation();
+      insertEmoji(emoji);
+    };
     container.appendChild(el);
   });
 }
-loadEmojiTray();
+loadEmojiGrid();
 
 /* ===================== ROOM META PIPELINE ===================== */
 function trackRoomMetaTitle() {
@@ -383,7 +436,7 @@ function uploadAvatarImage(el) {
   btn.textContent = "⏳ Uploading Image...";
   
   const bodyData = new FormData();
-  bodyData.append('file', file, file.name);
+  bodyData.append('file', file);
 
   fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: bodyData })
   .then(res => { if(!res.ok) throw new Error(); return res.json(); })
@@ -395,7 +448,7 @@ function uploadAvatarImage(el) {
     }
   })
   .catch(() => {
-    alert("Photo compression or transfer failed.");
+    alert("Profile photo transfer failed.");
     btn.textContent = "📸 Retry Photo Upload";
   })
   .finally(() => { el.value = ''; });
@@ -495,7 +548,7 @@ function monitorGatekeeping(){
 function grantAccess(id){ db.collection('users').doc(id).update({status:'approved'}); }
 function denyAccess(id){ db.collection('users').doc(id).delete(); }
 
-/* ===================== CHAT PIPELINE & STREAMABLE AUDIO FIX ===================== */
+/* ===================== CHAT PIPELINE & MULTIPART FIXES ===================== */
 function handleComposerKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function sendMessage(){
   const input = document.getElementById('msgInput'); const text = input.value.trim();
@@ -504,28 +557,21 @@ function sendMessage(){
     senderUid: currentUser.uid, text, mediaUrl: null, mediaType: null, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
   });
   input.value = '';
+  closeEmojiBox();
 }
 
 function toggleVoiceRecording() {
   const recBtn = document.getElementById('voiceRecBtn');
   if (!isRecording) {
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      let options = { mimeType: 'audio/webm;codecs=opus' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: 'audio/ogg;codecs=opus' };
-      }
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: '' };
-      }
-
-      mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
       mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        uploadVoiceToCatbox(audioBlob);
+        uploadFilePayload(audioBlob, 'voice-note.webm', 'audio');
       };
-      mediaRecorder.start(200);
+      mediaRecorder.start();
       isRecording = true;
       recBtn.classList.add('recording');
       recBtn.textContent = '⏹️';
@@ -549,47 +595,36 @@ function uploadDirectFile(el) {
   const docButton = document.getElementById('mediaUploadBtn');
   docButton.textContent = '⏳';
 
-  const bodyData = new FormData();
-  bodyData.append('file', file, file.name);
+  uploadFilePayload(file, file.name, mt, () => {
+    docButton.textContent = '📎';
+    el.value = '';
+  });
+}
 
-  fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: bodyData })
+// Global Multipart Processing Pipeline for tmpfiles.org
+function uploadFilePayload(fileData, fileName, mediaType, callback) {
+  const formData = new FormData();
+  formData.append('file', fileData, fileName);
+
+  fetch('https://tmpfiles.org/api/v1/upload', {
+    method: 'POST',
+    body: formData
+  })
   .then(res => { if(!res.ok) throw new Error(); return res.json(); })
   .then(payload => {
     if(payload && payload.data && payload.data.url) {
       const absoluteUrl = payload.data.url.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/');
       db.collection('messages').add({
-        senderUid: currentUser.uid, text: '', mediaUrl: absoluteUrl, mediaType: mt, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        senderUid: currentUser.uid, text: '', mediaUrl: absoluteUrl, mediaType: mediaType, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
+    } else {
+      throw new Error();
     }
   })
-  .catch(() => alert('Media upload failed.'))
-  .finally(() => { docButton.textContent = '📎'; });
-  el.value = '';
-}
-
-// Fix: Voice notes uploaded via Catbox allows perfect structural duration reads (no 0:00 bug)
-function uploadVoiceToCatbox(blobData) {
-  const micButton = document.getElementById('voiceRecBtn');
-  micButton.textContent = '⏳';
-
-  const formData = new FormData();
-  formData.append('reqtype', 'fileupload');
-  formData.append('fileToUpload', blobData, 'voice-note.webm');
-
-  fetch('https://catbox.moe/user/api.php', {
-    method: 'POST',
-    body: formData
-  })
-  .then(res => { if(!res.ok) throw new Error(); return res.text(); })
-  .then(fileUrl => {
-    if(fileUrl && fileUrl.includes('http')) {
-      db.collection('messages').add({
-        senderUid: currentUser.uid, text: '', mediaUrl: fileUrl.trim(), mediaType: 'audio', seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-    }
-  })
-  .catch(() => alert('Audio upload failed.'))
-  .finally(() => { micButton.textContent = '🎙️'; });
+  .catch(() => alert('Upload process encountered a network error.'))
+  .finally(() => {
+    if(callback) callback();
+  });
 }
 
 function forceMarkAsRead(){
@@ -613,7 +648,6 @@ function monitorChatChannel(){
       const row = document.createElement('div');
       row.className = `msg-row ${isMe ? 'mine':'theirs'}`;
 
-      // Fixed avatar markup to gracefully catch bad URLs via handleAvatarError()
       let profileImageMarkup = `<img src="${profile.avatarUrl || ''}" class="msg-avatar" alt="" onerror="handleAvatarError(this, '${escapeHtml(profile.name)}')" />`;
 
       let content = `<div class="msg-content-block"><span class="sender-label">${escapeHtml(profile.name)}</span><div class="msg">`;
