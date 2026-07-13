@@ -101,7 +101,11 @@
     .typing-indicator-bar { padding: 4px 20px; font-size: 0.8rem; color: var(--gold); font-style: italic; min-height: 22px; }
 
     /* ---------- Composers & Panels ---------- */
-    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px pb-safe; flex-shrink: 0; z-index: 50; }
+    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px pb-safe; flex-shrink: 0; z-index: 50; position: relative; }
+    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; border-top: 1px solid var(--danger); }
+    .voice-record-overlay.active { display: flex; }
+    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+
     .composer { display:flex; gap:8px; align-items:center; width: 100%; }
     .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; }
 
@@ -196,9 +200,18 @@
         <div class="typing-indicator-bar" id="typingIndicatorField"></div>
         
         <div class="composer-wrapper">
+          <div class="voice-record-overlay" id="voiceRecordOverlay">
+            <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
+            <div style="display:flex; gap:10px;">
+              <button class="btn small danger" onclick="cancelVoiceRecording()">✕ Cancel</button>
+              <button class="btn small gold" style="background:#4fa885;" onclick="stopAndSendVoice()">⏹️ Send</button>
+            </div>
+          </div>
+
           <div class="composer">
             <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleChatUpload(this)" />
             <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
+            <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
             <textarea id="chatInput" placeholder="Type a message..." rows="1" oninput="broadcastTypingStatus()"></textarea>
             <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" onclick="sendTextMessage()">Send</button>
           </div>
@@ -229,10 +242,12 @@
         <input type="text" id="editProfileName" placeholder="Change your display nickname" />
       </div>
       <div class="field">
-        <label>Avatar Photo URL</label>
-        <input type="text" id="editProfileAvatar" placeholder="Paste image url or leave blank" />
+        <label>Profile Picture</label>
+        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(this)" />
+        <button class="btn ghost text-center" id="avatarFileBtn" onclick="document.getElementById('avatarFileInput').click()">🖼️ Choose Photo from Gallery</button>
+        <div id="avatarUploadStatus" style="font-size:0.75rem; color:var(--success); margin-top:4px; font-style:italic;"></div>
       </div>
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <div style="display: flex; gap: 10px; margin-top: 26px;">
         <button class="btn ghost" onclick="closeProfileModal()">Cancel</button>
         <button class="btn gold" onclick="saveProfileChanges()">Update Profile Info</button>
       </div>
@@ -269,9 +284,13 @@
     let peer = null;
     let currentCall = null;
     let localStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
     let typingTimeout = null;
     let broadcastChannel = null;
     let selectedPostFile = null;
+    let uploadedAvatarUrl = null;
 
     window.toggleAuthMode = function(toRegister) {
       document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
@@ -322,25 +341,45 @@
       location.reload();
     };
 
-    // --- Profile Editing Modal Logic ---
+    // --- Profile Modal Gallery Picker Upload ---
     window.openProfileModal = function() {
       const myProfile = cachedProfiles[currentUser.id] || {};
       document.getElementById('editProfileName').value = myProfile.name || '';
-      document.getElementById('editProfileAvatar').value = myProfile.avatar_url || '';
+      document.getElementById('avatarUploadStatus').textContent = "";
+      uploadedAvatarUrl = myProfile.avatar_url || null;
+      document.getElementById('avatarFileBtn').textContent = uploadedAvatarUrl ? "📸 Change Selected Photo" : "🖼️ Choose Photo from Gallery";
       document.getElementById('profileModal').classList.add('active');
     };
     window.closeProfileModal = function() { document.getElementById('profileModal').classList.remove('active'); };
     
+    window.handleAvatarFileSelected = async function(inputElement) {
+      const file = inputElement.files[0];
+      if (!file) return;
+      
+      document.getElementById('avatarUploadStatus').textContent = "Uploading image...";
+      const uniqueName = `avatar-${currentUser.id}-${Date.now()}`;
+      
+      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
+      if(error) {
+        document.getElementById('avatarUploadStatus').textContent = "Upload failed. Try again.";
+        return;
+      }
+      
+      const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+      uploadedAvatarUrl = urlData.publicUrl;
+      document.getElementById('avatarFileBtn').textContent = "✅ Photo Attached Successfully";
+      document.getElementById('avatarUploadStatus').textContent = "Ready to save!";
+    };
+
     window.saveProfileChanges = async function() {
       const updatedName = document.getElementById('editProfileName').value.trim();
-      const updatedAvatar = document.getElementById('editProfileAvatar').value.trim();
       if(!updatedName) return alert("Name field is required");
       
-      const { error } = await supabaseClient.from('profiles').update({ name: updatedName, avatar_url: updatedAvatar }).eq('id', currentUser.id);
+      const { error } = await supabaseClient.from('profiles').update({ name: updatedName, avatar_url: uploadedAvatarUrl }).eq('id', currentUser.id);
       if(error) { alert("Error saving profile settings"); return; }
       
       closeProfileModal();
-      location.reload(); // Refresh configuration definitions across the screen interface
+      location.reload(); 
     };
 
     window.switchTab = function(target) {
@@ -364,7 +403,6 @@
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) profiles.forEach(p => cachedProfiles[p.id] = p);
 
-      // System Call Engine Configured with dynamic cross-network NAT bypass values
       const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
       peer = new Peer(sanitizedPeerId, {
         host: '0.peerjs.com', port: 443, path: '/', secure: true,
@@ -385,7 +423,6 @@
       setupPresenceAndBroadcasts(myProfile.name);
     }
 
-    // --- Typing & Presence Messaging Broker ---
     function setupPresenceAndBroadcasts(username) {
       broadcastChannel = supabaseClient.channel('room-communications', { config: { presence: { key: currentUser.id } } });
       
@@ -411,7 +448,6 @@
           }
         });
 
-      // Regular Table Event Channels
       supabaseClient.channel('table-changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
           renderMessageBubble(payload.new); 
@@ -513,6 +549,41 @@
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
     };
 
+    // --- Restored Advanced Voice Note Recording Logic Engine ---
+    window.toggleVoiceRecording = function() {
+      if (!isRecording) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.start();
+          isRecording = true;
+          document.getElementById('voiceRecordOverlay').classList.add('active');
+        }).catch(err => alert("Microphone hardware access request denied. Check permissions settings."));
+      }
+    };
+
+    window.cancelVoiceRecording = function() {
+      if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
+      document.getElementById('voiceRecordOverlay').classList.remove('active');
+    };
+
+    window.stopAndSendVoice = function() {
+      if(mediaRecorder) {
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const file = new File([audioBlob], "voice.webm");
+          const uniqueName = `${Date.now()}-voice.webm`;
+          await supabaseClient.storage.from('media').upload(uniqueName, file);
+          const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
+        };
+        mediaRecorder.stop();
+        isRecording = false;
+      }
+      document.getElementById('voiceRecordOverlay').classList.remove('active');
+    };
+
     async function fetchTimelinePosts() {
       const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
       if (data) {
@@ -556,7 +627,6 @@
       textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
     };
 
-    // --- High Stability Media Calling Controls ---
     window.makePeerCall = async function(wantsVideo) {
       document.getElementById('callOverlay').classList.add('active');
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
