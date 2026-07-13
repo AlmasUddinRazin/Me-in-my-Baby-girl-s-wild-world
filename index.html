@@ -34,6 +34,7 @@
     margin:0; min-height:100vh;
     background: radial-gradient(circle at 20% -10%, rgba(217,165,160,0.10), transparent 45%), radial-gradient(circle at 90% 10%, rgba(232,193,112,0.08), transparent 40%), var(--bg);
     color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased;
+    overflow: hidden;
   }
   h1,h2,h3 { font-family: 'Cormorant Garamond', serif; font-weight:600; letter-spacing:0.01em; }
   .screen { display:none; min-height:100vh; align-items:center; justify-content:center; padding:24px; }
@@ -67,6 +68,7 @@
   .topbar {
     display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
     border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px);
+    flex-shrink: 0;
   }
   .profile-meta-block { display:flex; align-items:center; gap:12px; }
   .avatar { width:42px; height:42px; border-radius:50%; object-fit:cover; border:1px solid var(--gold); background: #241C3A; }
@@ -103,15 +105,26 @@
   .msg-row.theirs .msg-meta-line { color: var(--muted); }
 
   .msg img, .msg video { max-width:100%; max-height: 320px; border-radius:10px; margin-top:6px; display:block; object-fit: contain; background: rgba(0,0,0,0.15); }
-  .msg audio { width:100%; margin-top:6px; display:block; min-width: 220px; }
+  .msg audio { width:100%; margin-top:6px; display:block; min-width: 240px; }
 
-  /* ---------- Composer & Utility Tool Trays ---------- */
-  .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.6); }
-  .utility-tray { display:flex; gap:6px; padding: 6px 12px; background: rgba(0,0,0,0.15); border-bottom: 1px solid rgba(232,193,112,0.05); overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
-  .tray-emoji { font-size: 1.25rem; cursor: pointer; padding: 2px 5px; border-radius: 6px; display: inline-block; }
-  .tray-emoji:hover { background: rgba(255,255,255,0.1); }
+  /* ---------- Composer & Fix Emoji Dock Box ---------- */
+  .composer-wrapper { display:flex; flex-direction:column; border-top:1px solid var(--border); background: rgba(13,11,24,0.85); flex-shrink: 0; }
   
-  .composer { display:flex; gap:8px; padding: 10px 16px; align-items:flex-end; }
+  /* Fix: Created a proper non-breaking grid emoji box wrapper */
+  .utility-tray { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 8px; 
+    padding: 10px; 
+    background: rgba(0, 0, 0, 0.3); 
+    max-height: 75px; 
+    overflow-y: auto; 
+    border-bottom: 1px solid rgba(232,193,112,0.08); 
+  }
+  .tray-emoji { font-size: 1.35rem; cursor: pointer; padding: 3px; border-radius: 6px; display: inline-block; transition: transform 0.1s ease; }
+  .tray-emoji:hover { background: rgba(255,255,255,0.15); transform: scale(1.15); }
+  
+  .composer { display:flex; gap:8px; padding: 12px 16px; align-items:flex-end; }
   .composer textarea {
     flex:1; resize:none; max-height:100px; padding:12px 14px; border-radius:14px;
     border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:'Inter'; font-size:0.92rem;
@@ -181,7 +194,7 @@
   <div class="app-wrap">
     <div class="topbar">
       <div class="profile-meta-block">
-        <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="this.src='https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=Us'" />
+        <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="handleAvatarError(this, 'Us')" />
         <div>
           <h2 id="topBarTitle" onclick="promptRoomNameUpdate()">Our Space ✏️</h2>
           <div class="who" id="whoLine"></div>
@@ -201,10 +214,9 @@
 
     <div class="composer-wrapper">
       <div class="utility-tray" id="emojiTrayContainer">
-        <!-- Loaded via JavaScript programmatically to save space -->
+        <!-- Expanded Emoji Pack -->
       </div>
       <div class="composer">
-        <!-- Native Secure Media Box Intent Hook -->
         <input type="file" id="hiddenFileInput" accept="image/*,video/*" onchange="uploadDirectFile(this)" style="display:none;" />
         <button class="icon-btn" id="voiceRecBtn" title="Record Voice Note" onclick="toggleVoiceRecording()">🎙️</button>
         <textarea id="msgInput" placeholder="Write into your private world..." rows="1" onkeydown="handleComposerKey(event)"></textarea>
@@ -253,7 +265,7 @@
   <div class="video-stage">
     <video id="remoteVideo" autoplay playsinline></video>
     <div class="audio-bg-avatar" id="audioOnlyStage" style="display:none;">
-      <img src="https://ui-avatars.com/api/?background=241C3A&color=E8C170&size=128&name=Call" id="callPartnerAvatar" />
+      <img src="" id="callPartnerAvatar" onerror="handleAvatarError(this, 'Call')" />
       <span style="color:var(--gold); font-size:1.2rem;">Voice Connection Active</span>
     </div>
     <video id="localVideo" autoplay playsinline muted></video>
@@ -292,8 +304,8 @@ let mediaRecorder = null;
 let audioChunks = [];
 let isRecording = false;
 
-// Requested custom immersive emoji dock
-const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","🙂‍↕️","😏","😒","🙂‍↔️","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😶‍🌫️","😐","😑","😬","🫨","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🫩","🤤","😪","😵","😵‍💫","🫥","Zip","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","🫱","🫲","🫸","🫷","🫳","🫴","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦿","🦶","👣","🫆","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","💋","🩸","❤️","💖","✨","🌸"];
+// Requested Custom Emoji Set
+const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥲","🥹","☺️","😊","😇","🙂","🙃","😉","😌","😍","🥰","😘","😗","😙","😚","😋","😛","😝","😜","🤪","🤨","🧐","🤓","😎","🥸","🤩","🥳","🙂‍↕️","😏","😒","🙂‍↔️","😞","😔","😟","😕","🙁","☹","😣","😖","😫","😩","🥺","😢","😭","😮‍💨","😤","😠","😡","🤬","🤯","😳","🥵","🥶","😱","😨","😰","😥","😓","🫣","🫡","🤔","🫢","🤭","🤫","🤥","😶","😶‍🌫️","😐","😑","😬","🫨","🫠","🙄","😯","😦","😧","😮","😲","🥱","😴","🫩","🤤","😪","😵","😵‍💫","🫥","🤐","🥴","🤢","🤮","🤧","😷","🤒","🤕","🤑","🤠","😈","👿","👹","👺","🤡","💩","👻","💀","☠️","👽","👾","🤖","🎃","😺","😸","😹","😻","😼","😽","🙀","😿","😾","👋","🤚","🖐","✋","🖖","👌","🤌","🤏","✌️","🤞","🫰","🤟","🤘","🤙","🫵","🫱","🫲","🫸","🫷","🫳","🫴","👈","👉","👆","🖕","👇","☝️","👍","👎","✊","👊","🤛","🤜","👏","🫶","🙌","👐","🤲","🤝","🙏","✍️","💅","🤳","💪","🦾","🦵","🦿","🦶","👣","🫆","👂","🦻","👃","🫀","🫁","🧠","🦷","🦴","👀","👁","👅","👄","🫦","💋","🩸","❤️","✨","🔥","🌸"];
 
 window.addEventListener('focus', () => { isTabFocused = true; forceMarkAsRead(); });
 window.addEventListener('blur', () => { isTabFocused = false; });
@@ -307,8 +319,13 @@ function showLogin(){ document.getElementById('signupForm').style.display='none'
 function insertEmoji(em) { const tx = document.getElementById('msgInput'); tx.value += em; tx.focus(); }
 
 function triggerNativeGalleryPick() {
-  // Triggers the native phone intent box requesting secure gallery access permissions
   document.getElementById('hiddenFileInput').click();
+}
+
+// Global Avatar Error Fallback Handler to prevent broken image layout
+function handleAvatarError(imgElement, displayName) {
+  const parsedName = displayName || 'Us';
+  imgElement.src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&font-size=0.4&name=${encodeURIComponent(parsedName)}`;
 }
 
 function loadEmojiTray() {
@@ -317,7 +334,7 @@ function loadEmojiTray() {
   emojiPack.forEach(emoji => {
     const el = document.createElement('span');
     el.className = 'tray-emoji';
-    el.textContent = emoji === "Zip" ? "🤐" : emoji; 
+    el.textContent = emoji; 
     el.onclick = () => insertEmoji(el.textContent);
     container.appendChild(el);
   });
@@ -389,7 +406,8 @@ function syncUsersCache() {
     snap.forEach(doc => { cachedUsers[doc.id] = doc.data(); });
     if(currentUser && cachedUsers[currentUser.uid]) {
       profileData = cachedUsers[currentUser.uid];
-      document.getElementById('myAvatarDisplay').src = profileData.avatarUrl || 'https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=' + encodeURIComponent(profileData.name || 'Us');
+      const fallbackUrl = 'https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=' + encodeURIComponent(profileData.name || 'Us');
+      document.getElementById('myAvatarDisplay').src = profileData.avatarUrl || fallbackUrl;
       document.getElementById('whoLine').textContent = profileData.name || currentUser.email;
     }
   });
@@ -477,7 +495,7 @@ function monitorGatekeeping(){
 function grantAccess(id){ db.collection('users').doc(id).update({status:'approved'}); }
 function denyAccess(id){ db.collection('users').doc(id).delete(); }
 
-/* ===================== CHAT PIPELINE & HIGH QUALITY AUDIO FIXED ===================== */
+/* ===================== CHAT PIPELINE & STREAMABLE AUDIO FIX ===================== */
 function handleComposerKey(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function sendMessage(){
   const input = document.getElementById('msgInput'); const text = input.value.trim();
@@ -492,13 +510,12 @@ function toggleVoiceRecording() {
   const recBtn = document.getElementById('voiceRecBtn');
   if (!isRecording) {
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-      // Force container options to match standard formats so both iOS/Android render perfectly
       let options = { mimeType: 'audio/webm;codecs=opus' };
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
         options = { mimeType: 'audio/ogg;codecs=opus' };
       }
       if (!MediaRecorder.isTypeSupported(options.mimeType)) {
-        options = { mimeType: '' }; // fallback configuration
+        options = { mimeType: '' };
       }
 
       mediaRecorder = new MediaRecorder(stream, options);
@@ -506,9 +523,9 @@ function toggleVoiceRecording() {
       mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        uploadDirectToTmpFiles(audioBlob, 'voice-note.webm', 'audio');
+        uploadVoiceToCatbox(audioBlob);
       };
-      mediaRecorder.start(200); // chunk slices every 200ms
+      mediaRecorder.start(200);
       isRecording = true;
       recBtn.classList.add('recording');
       recBtn.textContent = '⏹️';
@@ -529,38 +546,50 @@ function uploadDirectFile(el) {
   else if(file.type.startsWith('video/')) mt = 'video';
   else if(file.type.startsWith('audio/')) mt = 'audio';
 
-  uploadDirectToTmpFiles(file, file.name, mt);
-  el.value = '';
-}
-
-function uploadDirectToTmpFiles(fileData, fileName, calculatedType) {
   const docButton = document.getElementById('mediaUploadBtn');
-  const micButton = document.getElementById('voiceRecBtn');
-  
-  if(calculatedType === 'audio') micButton.textContent = '⏳';
-  else docButton.textContent = '⏳';
+  docButton.textContent = '⏳';
 
   const bodyData = new FormData();
-  bodyData.append('file', fileData, fileName);
+  bodyData.append('file', file, file.name);
 
-  fetch('https://tmpfiles.org/api/v1/upload', {
-    method: 'POST',
-    body: bodyData
-  })
+  fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: bodyData })
   .then(res => { if(!res.ok) throw new Error(); return res.json(); })
   .then(payload => {
     if(payload && payload.data && payload.data.url) {
       const absoluteUrl = payload.data.url.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/');
       db.collection('messages').add({
-        senderUid: currentUser.uid, text: '', mediaUrl: absoluteUrl, mediaType: calculatedType, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        senderUid: currentUser.uid, text: '', mediaUrl: absoluteUrl, mediaType: mt, seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
     }
   })
-  .catch(() => alert('Media pipeline processing failed. Try again.'))
-  .finally(() => {
-    micButton.textContent = '🎙️';
-    docButton.textContent = '📎';
-  });
+  .catch(() => alert('Media upload failed.'))
+  .finally(() => { docButton.textContent = '📎'; });
+  el.value = '';
+}
+
+// Fix: Voice notes uploaded via Catbox allows perfect structural duration reads (no 0:00 bug)
+function uploadVoiceToCatbox(blobData) {
+  const micButton = document.getElementById('voiceRecBtn');
+  micButton.textContent = '⏳';
+
+  const formData = new FormData();
+  formData.append('reqtype', 'fileupload');
+  formData.append('fileToUpload', blobData, 'voice-note.webm');
+
+  fetch('https://catbox.moe/user/api.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => { if(!res.ok) throw new Error(); return res.text(); })
+  .then(fileUrl => {
+    if(fileUrl && fileUrl.includes('http')) {
+      db.collection('messages').add({
+        senderUid: currentUser.uid, text: '', mediaUrl: fileUrl.trim(), mediaType: 'audio', seen: false, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+  })
+  .catch(() => alert('Audio upload failed.'))
+  .finally(() => { micButton.textContent = '🎙️'; });
 }
 
 function forceMarkAsRead(){
@@ -580,12 +609,12 @@ function monitorChatChannel(){
       if(!isMe && !m.seen) runReadExecution = true;
 
       const profile = cachedUsers[m.senderUid] || { name: 'Partner', avatarUrl: '' };
-      const fallbackUrl = 'https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=' + encodeURIComponent(profile.name || 'Us');
       
       const row = document.createElement('div');
       row.className = `msg-row ${isMe ? 'mine':'theirs'}`;
 
-      let profileImageMarkup = `<img src="${profile.avatarUrl || fallbackUrl}" class="msg-avatar" alt="" />`;
+      // Fixed avatar markup to gracefully catch bad URLs via handleAvatarError()
+      let profileImageMarkup = `<img src="${profile.avatarUrl || ''}" class="msg-avatar" alt="" onerror="handleAvatarError(this, '${escapeHtml(profile.name)}')" />`;
 
       let content = `<div class="msg-content-block"><span class="sender-label">${escapeHtml(profile.name)}</span><div class="msg">`;
       if(m.text) content += `<div>${escapeHtml(m.text)}</div>`;
@@ -763,8 +792,8 @@ function displayCallOverlay(isVideo, remoteUid){
   document.getElementById('audioOnlyStage').style.display = isVideo ? 'none' : 'flex';
 
   const partnerProfile = cachedUsers[remoteUid] || {};
-  const fallbackCallUrl = 'https://ui-avatars.com/api/?background=241C3A&color=E8C170&size=128&name=' + encodeURIComponent(partnerProfile.name || 'Call');
-  document.getElementById('callPartnerAvatar').src = partnerProfile.avatarUrl || fallbackCallUrl;
+  document.getElementById('callPartnerAvatar').src = partnerProfile.avatarUrl || '';
+  handleAvatarError(document.getElementById('callPartnerAvatar'), partnerProfile.name || 'Call');
 }
 
 function toggleMuteAudio(){
