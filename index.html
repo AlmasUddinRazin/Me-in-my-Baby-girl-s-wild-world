@@ -35,7 +35,7 @@
     .screen { display:none; height:100vh; align-items:center; justify-content:center; padding:24px; }
     .screen.active { display:flex; }
 
-    /* ---------- Auth Portal ---------- */
+    /* ---------- Auth & Popups ---------- */
     .auth-card {
       width:100%; max-width:400px; background: linear-gradient(180deg, var(--card), var(--card-2));
       border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 34px; text-align:center; box-shadow: 0 30px 60px rgba(0,0,0,0.35);
@@ -57,38 +57,31 @@
     .btn.small { width:auto; padding:6px 12px; font-size:0.8rem; }
     .err { color: var(--danger); font-size:0.82rem; margin-bottom:14px; text-align:left; }
 
-    /* ---------- App Structure ---------- */
+    /* ---------- Topbar & Presence ---------- */
     #appScreen { align-items:stretch; padding:0; }
     .app-wrap { display:flex; flex-direction:column; width:100%; height:100vh; height: 100dvh; position: relative; }
     .topbar {
       display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
       border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px); flex-shrink: 0;
     }
-    .profile-meta-block { display:flex; align-items:center; gap:12px; }
-    
-    .avatar-container { position: relative; width: 42px; height: 42px; }
-    .avatar { width:100%; height:100%; border-radius:50%; object-fit:cover; border:1px solid var(--gold); background: #241C3A; }
-    
-    /* Dynamic Presence Indicators */
-    .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); transition: background 0.3s ease; }
+    .profile-meta-block { display:flex; align-items:center; gap:12px; cursor: pointer; }
+    .avatar-container { position: relative; width: 44px; height: 44px; }
+    .avatar { width:100%; height:100%; border-radius:50%; object-fit:cover; border:1.5px solid var(--gold); background: #241C3A; }
+    .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); }
     .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
-
     .top-actions { display:flex; gap:8px; align-items:center; }
-    
     .icon-btn {
       width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
       background: var(--card); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.05rem;
     }
-    .icon-btn:hover { border-color: var(--gold); }
 
     .nav-tabs { display: flex; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .nav-tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
     .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,0.02); }
-    
     .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; min-height: 0; }
     .content-panel.active { display: flex; }
 
-    /* ---------- Chat UI ---------- */
+    /* ---------- Chat Elements ---------- */
     .chat-area { flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:12px; min-height: 0; -webkit-overflow-scrolling: touch; }
     .msg-row { display:flex; gap:8px; max-width:85%; align-items: flex-end; }
     .msg-row.mine { align-self:flex-end; flex-direction: row-reverse; }
@@ -101,28 +94,21 @@
     .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; position: relative; }
     .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
-    
     .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
     .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
-    .status-tick { font-weight: bold; font-size: 0.75rem; display: inline-block; }
-
-    .msg img, .msg video { max-width:100%; max-height: 260px; border-radius:10px; margin-top:4px; display:block; }
-    .msg audio { width:100%; margin-top:6px; display:block; }
-
-    /* ---------- Composer & Overlays ---------- */
-    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px pb-safe; flex-shrink: 0; z-index: 50; }
-    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; border-top: 1px solid var(--danger); }
-    .voice-record-overlay.active { display: flex; }
-    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+    .status-tick { font-weight: bold; font-size: 0.75rem; }
     
-    .universal-emoji-box { position: absolute; bottom: 70px; left: 16px; width: min(320px, 90vw); max-height: 220px; background: var(--card-2); border: 1px solid var(--gold); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: none; flex-direction: column; z-index: 99; overflow: hidden; }
-    .universal-emoji-box.active { display: flex; }
-    .emoji-box-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.8rem; color: var(--gold); }
-    .emoji-box-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 10px; overflow-y: auto; }
-    .box-emoji-item { font-size: 1.4rem; cursor: pointer; text-align: center; padding: 4px; border-radius: 6px; }
+    .typing-indicator-bar { padding: 4px 20px; font-size: 0.8rem; color: var(--gold); font-style: italic; min-height: 22px; }
 
+    /* ---------- Composers & Panels ---------- */
+    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px pb-safe; flex-shrink: 0; z-index: 50; }
     .composer { display:flex; gap:8px; align-items:center; width: 100%; }
-    .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; line-height: 20px; }
+    .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; }
+
+    /* ---------- Edit Profile Modal ---------- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(6,5,12,0.85); display: none; align-items: center; justify-content: center; z-index: 500; padding: 20px; }
+    .modal-overlay.active { display: flex; }
+    .profile-setup-card { background: var(--card-2); border: 1px solid var(--gold); border-radius: var(--radius); width: 100%; max-width: 400px; padding: 28px; }
 
     /* ---------- Timeline Feed ---------- */
     .timeline-area { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
@@ -151,7 +137,6 @@
     <div class="auth-card">
       <h1>Our Wild World</h1>
       <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Secure Vault Authorization Required.</p>
-      
       <div id="loginForm">
         <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
         <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
@@ -161,7 +146,6 @@
           Need access? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(true)">Request Registration</a>
         </p>
       </div>
-
       <div id="registerForm" style="display:none;">
         <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
         <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
@@ -177,7 +161,7 @@
   <div id="pendingScreen" class="screen">
     <div class="auth-card">
       <h1>Awaiting Access Keys</h1>
-      <p style="color:var(--muted); line-height:1.5;">Your secure account is pending portal authorization. The supervisor must approve your entry profile.</p>
+      <p style="color:var(--muted); line-height:1.5;">Your entry profile must be approved by the supervisor.</p>
       <button class="btn ghost" style="margin-top:20px;" onclick="signOutSession()">Disconnect Session</button>
     </div>
   </div>
@@ -185,14 +169,14 @@
   <div id="appScreen" class="screen">
     <div class="app-wrap">
       <div class="topbar">
-        <div class="profile-meta-block">
+        <div class="profile-meta-block" onclick="openProfileModal()">
           <div class="avatar-container">
             <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="handleAvatarError(this, 'Us')" />
             <div id="presenceIndicator" class="status-dot"></div>
           </div>
           <div>
             <h2 id="topBarTitle">Our Sealed Space</h2>
-            <div class="who" id="whoLine"></div>
+            <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Setting up profile...</div>
           </div>
         </div>
         <div class="top-actions">
@@ -203,32 +187,19 @@
       </div>
 
       <div class="nav-tabs">
-        <div class="nav-tab active" id="tabChatBtn" onclick="switchTab('chat')">💬 WhatsApp Chat</div>
+        <div class="nav-tab active" id="tabChatBtn" onclick="switchTab('chat')">💬 Chat Room</div>
         <div class="nav-tab" id="tabTimelineBtn" onclick="switchTab('timeline')">🖼️ Our Timeline</div>
       </div>
 
       <div id="panelChat" class="content-panel active">
-        <div class="chat-area" id="chatArea" onclick="closeEmojiBox()"></div>
+        <div class="chat-area" id="chatArea"></div>
+        <div class="typing-indicator-bar" id="typingIndicatorField"></div>
+        
         <div class="composer-wrapper">
-          <div class="voice-record-overlay" id="voiceRecordOverlay">
-            <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
-            <div style="display:flex; gap:10px;">
-              <button class="btn small danger" onclick="cancelVoiceRecording()">✕ Cancel</button>
-              <button class="btn small gold" style="background:#4fa885;" onclick="stopAndSendVoice()">⏹️ Send</button>
-            </div>
-          </div>
-
-          <div class="universal-emoji-box" id="universalEmojiBox">
-            <div class="emoji-box-header"><span>Select Emoji</span><span style="cursor:pointer;" onclick="closeEmojiBox()">✕</span></div>
-            <div class="emoji-box-grid" id="emojiGridContainer"></div>
-          </div>
-
           <div class="composer">
             <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleChatUpload(this)" />
             <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
-            <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
-            <button class="icon-btn" onclick="toggleEmojiBox(event)">😀</button>
-            <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
+            <textarea id="chatInput" placeholder="Type a message..." rows="1" oninput="broadcastTypingStatus()"></textarea>
             <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" onclick="sendTextMessage()">Send</button>
           </div>
         </div>
@@ -237,11 +208,11 @@
       <div id="panelTimeline" class="content-panel">
         <div class="timeline-area">
           <div class="timeline-composer">
-            <textarea id="postText" placeholder="What's on your mind today, beautiful?..." rows="3"></textarea>
+            <textarea id="postText" placeholder="Share something with your favorite person..." rows="3"></textarea>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
               <input type="file" id="postFileInput" accept="image/*" style="display:none;" onchange="handlePostFileSelected(this)" />
               <button class="btn ghost small" id="postFileBtn" onclick="document.getElementById('postFileInput').click()">📸 Add Photo</button>
-              <button class="btn gold small" onclick="submitTimelinePost()">Publish Post</button>
+              <button class="btn gold small" onclick="submitTimelinePost()">Publish</button>
             </div>
           </div>
           <div id="timelineFeed"></div>
@@ -250,14 +221,32 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="profileModal">
+    <div class="profile-setup-card">
+      <h3 style="color: var(--gold); margin-top: 0; font-size: 1.4rem;">Customize Profile</h3>
+      <div class="field">
+        <label>Display Name</label>
+        <input type="text" id="editProfileName" placeholder="Change your display nickname" />
+      </div>
+      <div class="field">
+        <label>Avatar Photo URL</label>
+        <input type="text" id="editProfileAvatar" placeholder="Paste image url or leave blank" />
+      </div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button class="btn ghost" onclick="closeProfileModal()">Cancel</button>
+        <button class="btn gold" onclick="saveProfileChanges()">Update Profile Info</button>
+      </div>
+    </div>
+  </div>
+
   <div class="incoming-banner" id="incomingBanner">
-    <span style="color:var(--gold); font-weight:600;">Incoming Ringing Line...</span>
+    <span style="color:var(--gold); font-weight:600;">Incoming Ring Line...</span>
     <button class="btn small gold" onclick="acceptIncomingCall()">Answer</button>
     <button class="btn small danger" onclick="rejectIncomingCall()">Decline</button>
   </div>
 
   <div id="callOverlay">
-    <div style="color:var(--gold); margin-bottom:14px; font-size:1.2rem;" id="callStatusMessage">Secure Call Active</div>
+    <div style="color:var(--gold); margin-bottom:14px; font-size:1.2rem;" id="callStatusMessage">Call Active</div>
     <div class="video-stage">
       <video id="remoteVideo" autoplay playsinline></video>
       <video id="localVideo" autoplay playsinline muted></video>
@@ -275,15 +264,13 @@
     
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    const emojiPack = ["😀","😃","😄","😁","😆","😅","😂","🤣","🥰","😘","❤️","✨","🔥","🌸"];
     let currentUser = null; 
     let cachedProfiles = {};
     let peer = null;
     let currentCall = null;
     let localStream = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let isRecording = false;
+    let typingTimeout = null;
+    let broadcastChannel = null;
     let selectedPostFile = null;
 
     window.toggleAuthMode = function(toRegister) {
@@ -294,11 +281,8 @@
     window.handleAuthentication = async function() {
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
-      const errEl = document.getElementById('authErr');
-      errEl.textContent = "";
-
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) { errEl.textContent = error.message; return; }
+      if (error) { document.getElementById('authErr').textContent = error.message; return; }
       checkSessionState(data.user);
     };
 
@@ -306,13 +290,10 @@
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
-      
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
       if(error) { alert(error.message); return; }
-      
       if(data.user) {
         await supabaseClient.from('profiles').insert([{ id: data.user.id, name: name, status: 'approved' }]);
-        alert("Registration Complete! Logging you in...");
         checkSessionState(data.user);
       }
     };
@@ -320,12 +301,8 @@
     async function checkSessionState(user) {
       if (!user) return;
       currentUser = user;
-
       const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-      if (!profile || profile.status !== 'approved') {
-        showScreen('pendingScreen');
-        return;
-      }
+      if (!profile || profile.status !== 'approved') { showScreen('pendingScreen'); return; }
       initializePortal(profile);
     }
 
@@ -337,7 +314,6 @@
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
-      if(id === 'appScreen') { setTimeout(() => { const c = document.getElementById('chatArea'); c.scrollTop = c.scrollHeight; }, 100); }
     }
 
     window.signOutSession = async function() {
@@ -346,13 +322,33 @@
       location.reload();
     };
 
+    // --- Profile Editing Modal Logic ---
+    window.openProfileModal = function() {
+      const myProfile = cachedProfiles[currentUser.id] || {};
+      document.getElementById('editProfileName').value = myProfile.name || '';
+      document.getElementById('editProfileAvatar').value = myProfile.avatar_url || '';
+      document.getElementById('profileModal').classList.add('active');
+    };
+    window.closeProfileModal = function() { document.getElementById('profileModal').classList.remove('active'); };
+    
+    window.saveProfileChanges = async function() {
+      const updatedName = document.getElementById('editProfileName').value.trim();
+      const updatedAvatar = document.getElementById('editProfileAvatar').value.trim();
+      if(!updatedName) return alert("Name field is required");
+      
+      const { error } = await supabaseClient.from('profiles').update({ name: updatedName, avatar_url: updatedAvatar }).eq('id', currentUser.id);
+      if(error) { alert("Error saving profile settings"); return; }
+      
+      closeProfileModal();
+      location.reload(); // Refresh configuration definitions across the screen interface
+    };
+
     window.switchTab = function(target) {
       document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       if(target === 'chat') {
         document.getElementById('panelChat').classList.add('active');
         document.getElementById('tabChatBtn').classList.add('active');
-        const c = document.getElementById('chatArea'); c.scrollTop = c.scrollHeight;
         markAllAsRead();
       } else {
         document.getElementById('panelTimeline').classList.add('active');
@@ -361,21 +357,22 @@
     };
 
     async function initializePortal(myProfile) {
-      document.getElementById('whoLine').textContent = myProfile.name;
-      document.getElementById('myAvatarDisplay').src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(myProfile.name)}`;
+      document.getElementById('whoLine').textContent = `Logged in as: ${myProfile.name}`;
+      document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(myProfile.name)}`;
       showScreen('appScreen');
 
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) profiles.forEach(p => cachedProfiles[p.id] = p);
 
-      // Setup PeerJS using reliable public cloud brokers for mobile connections
+      // System Call Engine Configured with dynamic cross-network NAT bypass values
       const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
       peer = new Peer(sanitizedPeerId, {
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true,
-        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun2.l.google.com:19302' }] }
+        host: '0.peerjs.com', port: 443, path: '/', secure: true,
+        config: { iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]}
       });
 
       peer.on('call', (incomingCall) => {
@@ -383,17 +380,42 @@
         document.getElementById('incomingBanner').classList.add('active');
       });
 
-      loadEmojiGrid();
       fetchChatHistory();
       fetchTimelinePosts();
-      setupPresenceTracking(myProfile.name);
+      setupPresenceAndBroadcasts(myProfile.name);
+    }
+
+    // --- Typing & Presence Messaging Broker ---
+    function setupPresenceAndBroadcasts(username) {
+      broadcastChannel = supabaseClient.channel('room-communications', { config: { presence: { key: currentUser.id } } });
       
-      supabaseClient.channel('room-changes')
+      broadcastChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = broadcastChannel.presenceState();
+          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+          const dot = document.getElementById('presenceIndicator');
+          if(partnerId && state[partnerId]) dot.classList.add('online');
+          else dot.classList.remove('online');
+        })
+        .on('broadcast', { event: 'typing' }, payload => {
+          const indicator = document.getElementById('typingIndicatorField');
+          if(payload.payload.isTyping) {
+            indicator.textContent = `${payload.payload.name} is typing...`;
+          } else {
+            indicator.textContent = '';
+          }
+        })
+        .subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            await broadcastChannel.track({ name: username, online_at: new Date().toISOString() });
+          }
+        });
+
+      // Regular Table Event Channels
+      supabaseClient.channel('table-changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
           renderMessageBubble(payload.new); 
-          if(payload.new.sender_uid !== currentUser.id && document.getElementById('panelChat').classList.contains('active')) {
-             markAsRead(payload.new.id);
-          }
+          if(payload.new.sender_uid !== currentUser.id) markAsRead(payload.new.id);
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
           const targetTick = document.getElementById(`tick-${payload.new.id}`);
@@ -404,31 +426,17 @@
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
         .subscribe();
-
-      markAllAsRead();
     }
 
-    // Dynamic Realtime Presence Syncing Engine
-    function setupPresenceTracking(username) {
-      const presenceRoom = supabaseClient.channel('online-status', { config: { presence: { key: currentUser.id } } });
+    window.broadcastTypingStatus = function() {
+      if(!broadcastChannel) return;
+      broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
       
-      presenceRoom
-        .on('presence', { event: 'sync' }, () => {
-          const state = presenceRoom.presenceState();
-          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
-          const dot = document.getElementById('presenceIndicator');
-          if(partnerId && state[partnerId]) {
-            dot.classList.add('online');
-          } else {
-            dot.classList.remove('online');
-          }
-        })
-        .subscribe(async (status) => {
-          if (status === 'SUBSCRIBED') {
-            await presenceRoom.track({ name: username, online_at: new Date().toISOString() });
-          }
-        });
-    }
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
+      }, 2000);
+    };
 
     async function fetchChatHistory() {
       let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
@@ -457,24 +465,23 @@
         else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
       }
 
-      const cleanTime = msg.created_at || new Date();
-      // Tick States: Sent (✓), Read (✓✓ in light blue/green color)
       let tickMarkup = '';
       if(isMe) {
         const tickColor = msg.is_read ? 'color: #64C9A2;' : 'color: rgba(36,28,58,0.4);';
-        const tickText = msg.is_read ? '✓✓' : '✓';
-        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${tickText}</span>`;
+        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${msg.is_read ? '✓✓' : '✓'}</span>`;
       }
 
+      const avatarSrc = profile.avatar_url || `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(profile.name)}`;
+
       row.innerHTML = `
-        <img src="https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(profile.name)}" class="msg-avatar" />
+        <img src="${avatarSrc}" class="msg-avatar" />
         <div class="msg-content-block">
           <span class="sender-label">${profile.name}</span>
           <div class="msg">
             ${msg.text ? `<div>${msg.text}</div>` : ''}
             ${mediaMarkup}
             <div class="msg-meta-line">
-              ${new Date(cleanTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              ${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               ${tickMarkup}
             </div>
           </div>
@@ -489,91 +496,38 @@
       const txt = input.value.trim();
       if(!txt) return;
       input.value = '';
+      if(broadcastChannel) broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt, is_read: false }]);
     };
 
-    async function markAsRead(id) {
-      await supabaseClient.from('messages').update({ is_read: true }).eq('id', id);
-    }
-
-    async function markAllAsRead() {
-      if(!currentUser) return;
-      await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false);
-    }
+    async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
+    async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
 
     window.handleChatUpload = async function(inputElement) {
-      const file = inputElement.files[0];
-      if (!file) return;
+      const file = inputElement.files[0]; if (!file) return;
       const uniqueName = `${Date.now()}-${file.name}`;
-      
-      const { data, error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
+      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
       if (error) return;
-      
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
     };
 
-    window.toggleVoiceRecording = function() {
-      if (!isRecording) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-          mediaRecorder.start();
-          isRecording = true;
-          document.getElementById('voiceRecordOverlay').classList.add('active');
-        }).catch(err => alert("Mic Access Denied"));
-      }
-    };
-
-    window.cancelVoiceRecording = function() {
-      if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
-      document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
-
-    window.stopAndSendVoice = function() {
-      if(mediaRecorder) {
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const file = new File([audioBlob], "voice.webm");
-          const uniqueName = `${Date.now()}-voice.webm`;
-          await supabaseClient.storage.from('media').upload(uniqueName, file);
-          const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
-        };
-        mediaRecorder.stop();
-        isRecording = false;
-      }
-      document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
-
-    window.toggleEmojiBox = function(e) { e.stopPropagation(); document.getElementById('universalEmojiBox').classList.toggle('active'); };
-    window.closeEmojiBox = function() { document.getElementById('universalEmojiBox').classList.remove('active'); };
-    
-    function loadEmojiGrid() {
-      const container = document.getElementById('emojiGridContainer');
-      container.innerHTML = '';
-      emojiPack.forEach(emoji => {
-        const el = document.createElement('div'); el.className = 'box-emoji-item'; el.textContent = emoji;
-        el.onclick = () => { document.getElementById('chatInput').value += emoji; };
-        container.appendChild(el);
-      });
-    }
-
     async function fetchTimelinePosts() {
       const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
       if (data) {
-        const feed = document.getElementById('timelineFeed');
-        feed.innerHTML = '';
+        const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
         data.forEach(post => {
-          const profile = cachedProfiles[post.sender_uid] || { name: 'System User' };
-          const card = document.createElement('div');
-          card.className = 'post-card';
+          const profile = cachedProfiles[post.sender_uid] || { name: 'Partner' };
+          const card = document.createElement('div'); card.className = 'post-card';
+          const avatarSrc = profile.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}`;
           card.innerHTML = `
             <div class="post-header">
-              <div class="post-author">${profile.name}</div>
-              <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
+              <img src="${avatarSrc}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
+              <div>
+                <div class="post-author">${profile.name}</div>
+                <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
+              </div>
             </div>
             <div class="post-body">${post.text || ''}</div>
             ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
@@ -585,14 +539,12 @@
 
     window.handlePostFileSelected = function(el) {
       selectedPostFile = el.files[0];
-      if(selectedPostFile) { document.getElementById('postFileBtn').textContent = "✅ Attached"; }
+      if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ Attached";
     };
 
     window.submitTimelinePost = async function() {
-      const textInput = document.getElementById('postText');
-      const text = textInput.value.trim();
+      const textInput = document.getElementById('postText'); const text = textInput.value.trim();
       if(!text && !selectedPostFile) return;
-      
       let mediaUrl = null;
       if(selectedPostFile) {
         const uniqueName = `${Date.now()}-${selectedPostFile.name}`;
@@ -600,22 +552,18 @@
         const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
         mediaUrl = data.publicUrl;
       }
-
       await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
-      textInput.value = '';
-      selectedPostFile = null;
-      document.getElementById('postFileBtn').textContent = "📸 Add Photo";
+      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
     };
 
+    // --- High Stability Media Calling Controls ---
     window.makePeerCall = async function(wantsVideo) {
       document.getElementById('callOverlay').classList.add('active');
       localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
       document.getElementById('localVideo').srcObject = localStream;
-      
       const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
       if(!partnerId) return;
       const sanitizedPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
-      
       currentCall = peer.call(sanitizedPartnerId, localStream);
       currentCall.on('stream', rStream => { document.getElementById('remoteVideo').srcObject = rStream; });
     };
