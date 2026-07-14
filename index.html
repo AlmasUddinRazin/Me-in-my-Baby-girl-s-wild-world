@@ -184,15 +184,9 @@
   </style>
 
   <script>
-    // Universal Robust Avatar Handlers
     window.handleAvatarError = function(img, name) { 
       img.onerror = null;
-      const localUrl = localStorage.getItem('local_avatar_url');
-      if (localUrl && img.src !== localUrl) {
-        img.src = localUrl;
-      } else {
-        img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=" + encodeURIComponent(name || 'Us'); 
-      }
+      img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&bold=true&name=" + encodeURIComponent(name || 'Us'); 
     };
   </script>
 </head>
@@ -437,6 +431,10 @@
     const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
     
+    // HARDCODED UIDS - NO SCRIPT MIXUPS
+    const MY_UID = "8cc7c466-e340-4be2-aaf6-51e697b656cd";
+    const HER_UID = "edfbab5f-bf54-49db-b5e3-a73c1af0486f";
+
     let currentUser = null; 
     let cachedProfiles = {};
     let peer = null;
@@ -449,7 +447,7 @@
     let typingTimeout = null;
     let broadcastChannel = null;
     let selectedPostFile = null;
-    let uploadedAvatarUrl = localStorage.getItem('local_avatar_url') || null;
+    let uploadedAvatarUrl = null;
     
     let isEditingMsgId = null;
     let replyingToMsgId = null;
@@ -521,8 +519,9 @@
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
       if(error) { alert(error.message); return; }
       if(data.user) {
+        const targetId = data.user.email.includes("babygirl") || name.toLowerCase().includes("baby") ? HER_UID : MY_UID;
         const insertPayload = { name: name, status: 'approved' };
-        insertPayload[detectedProfileIdKey] = data.user.id;
+        insertPayload[detectedProfileIdKey] = targetId;
         await supabaseClient.from('profiles').insert([insertPayload]);
         checkSessionState(data.user);
       }
@@ -531,21 +530,28 @@
     async function checkSessionState(user) {
       if (!user) return;
       currentUser = user;
+      
+      // Map user email session to correct hardcoded UID
+      let assignedUid = MY_UID;
+      if (user.id === HER_UID || user.email.toLowerCase().includes("babygirl")) {
+        assignedUid = HER_UID;
+      }
+      currentUser.id = assignedUid; 
+
       let profile = null;
       let primaryKeysToTry = ['id', 'uid', 'user_id'];
       
       for(let key of primaryKeysToTry) {
         try {
-          const { data, error } = await supabaseClient.from('profiles').select('*').eq(key, user.id).maybeSingle();
+          const { data, error } = await supabaseClient.from('profiles').select('*').eq(key, currentUser.id).maybeSingle();
           if(!error && data) { detectedProfileIdKey = key; profile = data; break; }
         } catch(e){}
       }
 
-      if(!profile) {
-        const { data } = await supabaseClient.from('profiles').select('*').limit(5);
-        if(data && data.length > 0) {
-          profile = data.find(p => p.id === user.id || p.uid === user.id || p.user_id === user.id);
-          if(profile) detectedProfileIdKey = profile.id ? 'id' : (profile.uid ? 'uid' : 'user_id');
+      if (!profile) {
+        const { data } = await supabaseClient.from('profiles').select('*');
+        if (data) {
+          profile = data.find(p => p.id === currentUser.id || p.uid === currentUser.id || p.user_id === currentUser.id);
         }
       }
 
@@ -576,6 +582,7 @@
       document.getElementById('editProfileNasty').value = myProfile.nasty_details || '';
       document.getElementById('avatarUploadStatus').textContent = "";
       
+      uploadedAvatarUrl = myProfile.avatar_url || '';
       const previewBox = document.getElementById('avatarPreviewBox');
       if (uploadedAvatarUrl) {
         previewBox.src = uploadedAvatarUrl;
@@ -601,9 +608,6 @@
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       uploadedAvatarUrl = urlData.publicUrl;
 
-      // Save to local persistence immediately
-      localStorage.setItem('local_avatar_url', uploadedAvatarUrl);
-
       document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
       document.getElementById('avatarPreviewBox').style.display = 'block';
       document.getElementById('avatarFileBtn').textContent = "✅ Upload Complete!";
@@ -623,7 +627,7 @@
       cachedProfiles[currentUser.id] = { ...cachedProfiles[currentUser.id], ...updateData };
       closeProfileModal();
       document.getElementById('myAvatarDisplay').src = uploadedAvatarUrl;
-      fetchChatHistory();
+      await refreshAllProfilesData();
     }
 
     function applyPortalTheme(themeClass) {
@@ -672,23 +676,26 @@
       }
     }
 
+    async function refreshAllProfilesData() {
+      const { data: profiles } = await supabaseClient.from('profiles').select('*');
+      if(profiles) {
+        profiles.forEach(p => {
+          const matchedUid = (p.id === MY_UID || p.uid === MY_UID || p.user_id === MY_UID) ? MY_UID : HER_UID;
+          cachedProfiles[matchedUid] = p;
+        });
+      }
+      const myProfile = cachedProfiles[currentUser.id] || {};
+      document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || '';
+      window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
+    }
+
     async function initializePortal(myProfile) {
       applyPortalTheme(localStorage.getItem('user-theme') || 'midnight');
       if(localStorage.getItem('user-accent')) applyAccentColor(localStorage.getItem('user-accent'));
       if(localStorage.getItem('custom-room-title')) changeRoomName(localStorage.getItem('custom-room-title'));
 
-      const finalAvatar = myProfile.avatar_url || localStorage.getItem('local_avatar_url') || '';
-      document.getElementById('myAvatarDisplay').src = finalAvatar;
-      window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
+      await refreshAllProfilesData();
       showScreen('appScreen');
-
-      const { data: profiles } = await supabaseClient.from('profiles').select('*');
-      if(profiles) {
-        profiles.forEach(p => {
-          const actualUid = p.id || p.uid || p.user_id;
-          if(actualUid) cachedProfiles[actualUid] = p;
-        });
-      }
 
       const sessionSuffix = Math.floor(Math.random() * 1000);
       const sanitizedPeerId = "wildworld-" + currentUser.id.replace(/[^a-zA-Z0-9]/g, '') + "-" + sessionSuffix;
@@ -728,8 +735,7 @@
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
         document.getElementById('localVideo').srcObject = localStream;
         
-        const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
-        if(!partnerId) return;
+        const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
         const sanitizedPartnerId = "wildworld-" + partnerId.replace(/[^a-zA-Z0-9]/g, '');
         
         currentCall = peer.call(sanitizedPartnerId, localStream);
@@ -806,12 +812,13 @@
     }
 
     function renderMessageBubble(msg) {
-      if(document.getElementById(`msg-${msg.id}`)) {
-        updateReactionUi(msg.id, msg.reactions); return;
-      }
       const chatArea = document.getElementById('chatArea');
-      const isMe = msg.sender_uid === currentUser.id;
-      const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
+      
+      // Enforce clean layout bindings using strict UIDs
+      const computedSenderUid = (msg.sender_uid === MY_UID || msg.sender_id === MY_UID) ? MY_UID : HER_UID;
+      const isMe = computedSenderUid === currentUser.id;
+      
+      const profile = cachedProfiles[computedSenderUid] || { name: isMe ? 'Me' : 'Babygirl 😺' };
       
       const row = document.createElement('div');
       row.id = `msg-${msg.id}`;
@@ -853,7 +860,7 @@
       if(isMe) {
         row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text')));
       }
-      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(msg.sender_uid));
+      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(computedSenderUid));
 
       chatArea.appendChild(row);
       window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
@@ -982,40 +989,32 @@
       localStorage.setItem('my-mood', mood);
     }
 
-    // FIXED SUPABASE REALTIME PRESENCE ENGINE (Calls .on() BEFORE calling .subscribe())
+    // FIXED PRESENCE CONFIGURATION - CORRECT CALLBACK HOOK ORDER
     async function setupPresenceAndBroadcasts(username) {
       broadcastChannel = supabaseClient.channel('room-communications');
       
       broadcastChannel
         .on('presence', { event: 'sync' }, () => {
           const state = broadcastChannel.presenceState();
-          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+          const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
           const dot = document.getElementById('presenceIndicator');
           const whoLine = document.getElementById('whoLine');
-          const partner = partnerId ? cachedProfiles[partnerId] : null;
-          const partnerName = partner ? partner.name : "Partner";
 
-          if (partnerId && state[partnerId]) {
-            // Player is Online
+          if (state[partnerId]) {
             dot.className = 'status-dot online';
             whoLine.innerHTML = `<span style="color:var(--success); font-weight:bold;">Online</span>`;
           } else {
-            // Player is Offline -> Fetch exact "Last Seen" timestamp
             dot.className = 'status-dot';
-            const localLeft = localStorage.getItem(`last_seen_${partnerId || 'partner'}`);
-            if (localLeft) {
-              whoLine.innerHTML = `Last seen ${localLeft}`;
-            } else {
-              whoLine.innerHTML = `Offline`;
-            }
+            const localLeft = localStorage.getItem(`last_seen_${partnerId}`);
+            whoLine.innerHTML = localLeft ? `Last seen ${localLeft}` : `Offline`;
           }
         })
         .on('presence', { event: 'join' }, ({ key, currentPresences }) => {
-          // No-op
+          // Join hook
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
-          if (partnerId && leftPresences.some(p => p.presence_ref && key === partnerId)) {
+          const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
+          if (key === partnerId) {
             const formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem(`last_seen_${partnerId}`, formattedTime);
             document.getElementById('presenceIndicator').className = 'status-dot';
@@ -1085,9 +1084,10 @@
       if (data) {
         const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
         data.forEach(post => {
-          const profile = cachedProfiles[post.sender_uid] || { name: 'Partner' };
-          const card = document.createElement('div'); card.className = 'post-card';
+          const computedAuthorUid = (post.sender_uid === MY_UID || post.sender_id === MY_UID) ? MY_UID : HER_UID;
+          const profile = cachedProfiles[computedAuthorUid] || { name: computedAuthorUid === MY_UID ? 'Me' : 'Babygirl 😺' };
           
+          const card = document.createElement('div'); card.className = 'post-card';
           let reactionList = post.reactions || [];
           let loveCount = reactionList.filter(r => r.emoji === "❤️").length;
 
