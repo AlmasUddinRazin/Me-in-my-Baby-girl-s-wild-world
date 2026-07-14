@@ -110,38 +110,77 @@
     .msg-row.theirs { align-self:flex-start; flex-direction: row; }
     .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gold); background: #241C3A; flex-shrink: 0; cursor: pointer; }
     .msg-content-block { display:flex; flex-direction:column; max-width: calc(100% - 42px); }
+    .msg-row.mine .msg-content-block { align-items: flex-end; }
+    .msg-row.theirs .msg-content-block { align-items: flex-start; }
+    .sender-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; padding: 0 4px; }
     
     .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; position: relative; }
     .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
+    .msg img { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
     
-    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px; flex-shrink: 0; z-index: 50; }
+    .msg-actions { opacity: 0; position: absolute; top: -20px; right: 10px; display: flex; gap: 4px; background: var(--card-2); padding: 2px 6px; border-radius: 8px; border: 1px solid var(--border); transition: opacity 0.2s; z-index: 10; }
+    .msg:hover .msg-actions { opacity: 1; }
+    .msg-action-btn { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 0.7rem; }
+    
+    .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
+    .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
+    .status-tick { font-weight: bold; font-size: 0.75rem; }
+    
+    .typing-indicator-bar { padding: 4px 20px; font-size: 0.8rem; color: var(--gold); font-style: italic; min-height: 22px; }
+
+    .reply-hud { background: var(--card-2); padding: 8px 16px; border-top: 1px solid var(--border); display: none; align-items: center; justify-content: space-between; }
+    .reply-hud.active { display: flex; }
+    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px; flex-shrink: 0; z-index: 50; position: relative; }
+    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; border-top: 1px solid var(--danger); }
+    .voice-record-overlay.active { display: flex; }
+    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
+
     .composer { display:flex; gap:8px; align-items:center; width: 100%; }
     .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; }
 
     .modal-overlay { position: fixed; inset: 0; background: rgba(6,5,12,0.85); display: none; align-items: center; justify-content: center; z-index: 500; padding: 20px; }
     .modal-overlay.active { display: flex; }
     .profile-setup-card { background: var(--card-2); border: 1px solid var(--gold); border-radius: var(--radius); width: 100%; max-width: 480px; padding: 28px; max-height: 90vh; overflow-y: auto; }
+    
+    .profile-details-grid { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: start; }
+    .profile-details-left img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid var(--gold); }
 
     .sidebar-section { padding: 14px; border-bottom: 1px solid var(--border); }
     .sidebar-title { font-size: 1rem; color: var(--gold); margin-bottom: 8px; font-weight: 600; display: flex; justify-content: space-between; }
-    
-    /* Hot & Exciting Spark Activity Box Style */
-    .spark-box { background: linear-gradient(135deg, #2b1c3d, #140e24); border: 1px solid rgba(232,193,112,0.3); padding: 14px; border-radius: 12px; text-align: center; }
-    .spark-txt { font-size: 0.9rem; font-style: italic; color: var(--text); margin-bottom: 12px; line-height: 1.4; }
+    .couple-counter { font-size: 1.2rem; font-weight: bold; color: var(--rose); text-align: center; margin: 8px 0; }
+    .couple-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; max-height: 120px; overflow-y: auto; }
+    .couple-list li { display: flex; justify-content: space-between; margin-bottom: 6px; background: rgba(0,0,0,0.15); padding: 6px; border-radius: 6px; }
+
+    .timeline-area { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
+    .timeline-composer { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+    .timeline-composer textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; resize: none; font-family: inherit; }
+    .post-card { background: var(--card-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 12px; }
+    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .post-author { font-weight: 600; color: var(--gold); }
+    .post-time { font-size: 0.75rem; color: var(--muted); }
+    .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
+    .post-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; display: block; }
 
     #callOverlay { position:fixed; inset:0; background: #06050C; display:none; align-items:center; justify-content:center; z-index:200; flex-direction:column; }
     #callOverlay.active { display:flex; }
     .video-stage { position:relative; width:min(95vw, 680px); aspect-ratio: 4/3; background:#000; border-radius:20px; overflow:hidden; border:1px solid var(--border); }
     #remoteVideo { width:100%; height:100%; object-fit:cover; }
     #localVideo { position:absolute; width:25%; bottom:14px; right:14px; border-radius:10px; border:2px solid var(--gold); object-fit:cover; z-index:2; }
+    .call-controls { display:flex; gap:16px; margin-top:22px; flex-wrap: wrap; justify-content: center; }
     .incoming-banner { position:fixed; top:20px; left:50%; transform:translateX(-50%); background: var(--card); border:2px solid var(--gold); padding:16px 22px; border-radius:14px; display:none; align-items:center; gap:16px; z-index:300; }
     .incoming-banner.active { display:flex; }
+    .timer-overlay { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; color: var(--gold); }
   </style>
+
+  <script>
+    window.handleAvatarError = function(img, name) { 
+      img.onerror = null;
+      img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=" + encodeURIComponent(name || 'U'); 
+    };
+  </script>
 </head>
 <body>
-
-  <!-- Auth Screen Component -->
   <div id="authScreen" class="screen active">
     <div class="auth-card">
       <h1>Our Wild World</h1>
@@ -151,28 +190,37 @@
         <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
         <div class="err" id="authErr"></div>
         <button class="btn gold" id="loginSubmitBtn">Enter Space</button>
+        <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+          Need access? <a href="#" style="color:var(--gold);" id="toRegisterLink">Request Registration</a>
+        </p>
+      </div>
+      <div id="registerForm" style="display:none;">
+        <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
+        <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
+        <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
+        <button class="btn" id="registerSubmitBtn">Submit Application</button>
+        <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
+          Already registered? <a href="#" style="color:var(--gold);" id="toLoginLink">Sign In</a>
+        </p>
       </div>
     </div>
   </div>
 
-  <!-- App Structure -->
+  <div id="pendingScreen" class="screen">
+    <div class="auth-card">
+      <h1>Awaiting Access Keys</h1>
+      <p style="color:var(--muted); line-height:1.5;">Your entry profile must be approved by the supervisor.</p>
+      <button class="btn ghost" style="margin-top:20px;" id="pendingDisconnectBtn">Disconnect Session</button>
+    </div>
+  </div>
+
   <div id="appScreen" class="screen">
     <div class="app-layout">
       <aside class="sidebar" id="appSidebar">
         <div class="sidebar-section">
           <div class="sidebar-title"><span>⏳ Together Since</span></div>
-          <div id="anniversaryVal" style="font-size: 1.2rem; font-weight: bold; color: var(--rose); text-align: center;">0 Days</div>
+          <div id="anniversaryVal" class="couple-counter">0 Days</div>
         </div>
-
-        <!-- NEW Intimate Activity Arena to replace the broken Watch Room -->
-        <div class="sidebar-section">
-          <div class="sidebar-title"><span>🔥 Spicy Truth or Dare</span></div>
-          <div class="spark-box">
-            <div class="spark-txt" id="spicyPromptUi">"Roll the dice to lock in an exciting prompt for both of you..."</div>
-            <button class="btn gold small" id="rollSpicyBtn" style="width:100%;">Roll New Prompt</button>
-          </div>
-        </div>
-
         <div class="sidebar-section">
           <div class="sidebar-title"><span>😈 Current Mood</span></div>
           <div class="field" style="margin: 0;">
@@ -180,25 +228,32 @@
               <option value="Normal">Normal</option>
               <option value="Shy to say">Shy to say</option>
               <option value="Fucking Horny">Fucking Horny</option>
+              <option value="Fuck Me">Fuck Me</option>
+              <option value="Sucking">Sucking</option>
+              <option value="Licking">Licking</option>
               <option value="Imagining you naked">Imagining you naked</option>
             </select>
           </div>
           <div id="partnerMoodDisplay" style="font-size:0.8rem; margin-top:8px; color:var(--rose);">Partner is setting mood...</div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title"><span>📝 Bucket List</span> <button id="addBucketBtn" style="background:none; border:none; color:var(--gold); cursor:pointer;">+</button></div>
+          <ul class="couple-list" id="bucketListUi"></ul>
         </div>
       </aside>
 
       <div class="app-wrap">
         <div class="topbar">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="icon-btn" id="sidebarToggleBtn">☰</button>
+            <button class="icon-btn" title="Toggle Sidebar Menu" id="sidebarToggleBtn" style="border-radius:8px; font-size:1.2rem; background:transparent;">☰</button>
             <div class="profile-meta-block" id="topProfileBlock">
               <div class="avatar-container">
-                <img src="" id="myAvatarDisplay" class="avatar" alt="" />
+                <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="window.handleAvatarError(this, 'Us')" />
                 <div id="presenceIndicator" class="status-dot"></div>
               </div>
               <div>
                 <h2 id="topBarTitle">👅 Our Wild World</h2>
-                <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Loading Account...</div>
+                <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Setting up profile...</div>
               </div>
             </div>
           </div>
@@ -210,60 +265,152 @@
         </div>
 
         <div class="nav-tabs">
-          <div class="nav-tab active">👅 Chat Vault</div>
+          <div class="nav-tab active" id="tabChatBtn">👅 Our Wild World</div>
+          <div class="nav-tab" id="tabTimelineBtn">💋 U & Me</div>
         </div>
 
         <div id="panelChat" class="content-panel active">
           <div class="chat-area" id="chatArea"></div>
+          <div class="typing-indicator-bar" id="typingIndicatorField"></div>
+          
+          <div class="reply-hud" id="replyHud">
+            <span id="replyHudText" style="font-size:0.8rem; color:var(--muted);">Replying to...</span>
+            <button id="cancelReplyBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
+          </div>
+
           <div class="composer-wrapper">
-            <div class="composer">
-              <textarea id="chatInput" placeholder="Write a message..."></textarea>
-              <button class="btn small gold" style="height: 38px;" id="sendBtn">Send</button>
+            <div class="voice-record-overlay" id="voiceRecordOverlay">
+              <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
+              <div style="display:flex; gap:10px;">
+                <button class="btn small danger" id="cancelVoiceBtn">✕ Cancel</button>
+                <button class="btn small gold" style="background:#4fa885;" id="sendVoiceBtn">⏹️ Send</button>
+              </div>
             </div>
+
+            <div class="composer">
+              <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" />
+              <button class="icon-btn" id="attachFileBtn">📎</button>
+              <button class="icon-btn" id="voiceRecBtn">🎙</button>
+              <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
+              <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" id="sendBtn">Send</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="panelTimeline" class="content-panel">
+          <div class="timeline-area">
+            <div class="timeline-composer">
+              <textarea id="postText" placeholder="Share something with your favorite person..." rows="3"></textarea>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                <input type="file" id="postFileInput" accept="image/*" style="display:none;" />
+                <button class="btn ghost small" id="postFileBtn">📸 Add Photo</button>
+                <button class="btn gold small" id="submitPostBtn">Publish</button>
+              </div>
+            </div>
+            <div id="timelineFeed"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Customization Panel Modal -->
+  <div class="modal-overlay" id="profileInspectModal">
+    <div class="profile-setup-card">
+      <h3 style="color: var(--gold); margin-top: 0; font-size: 1.4rem;">Partner Info Card</h3>
+      <div class="profile-details-grid">
+        <div class="profile-details-left">
+          <img id="inspectAvatar" src="" onerror="window.handleAvatarError(this, 'U')" />
+        </div>
+        <div class="profile-details-right">
+          <h2 id="inspectName" style="margin:0 0 8px; color:var(--rose);">Partner</h2>
+          <p><strong>DOB:</strong> <span id="inspectDob">Not Specified</span></p>
+          <p><strong>Fantasies / Kinks:</strong></p>
+          <p id="inspectNasty" style="font-style:italic; color:var(--muted);">No secrets unlocked yet...</p>
+        </div>
+      </div>
+      <button class="btn ghost" style="margin-top:20px;" id="closeInspectBtn">Close</button>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="profileModal">
     <div class="profile-setup-card">
-      <h3 style="color: var(--gold); margin-top: 0;">Portal Management</h3>
-      <div class="field"><label>Your Name</label><input type="text" id="editProfileName" /></div>
-      <div class="field"><label>Date of Birth</label><input type="date" id="editProfileDob" /></div>
+      <h3 style="color: var(--gold); margin-top: 0; font-size: 1.4rem;">Customize Portal & Settings</h3>
       
       <div class="field">
-        <label>Profile Avatar Picture</label>
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-          <img id="avatarPreviewBox" style="width:50px; height:50px; border-radius:50%; object-fit:cover; display:none;" />
-        </div>
-        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
-        <button class="btn ghost" id="avatarFileBtn">Select Photo from Phone</button>
+        <label>Your Name</label>
+        <input type="text" id="editProfileName" />
+      </div>
+      
+      <div class="field">
+        <label>Your Date of Birth</label>
+        <input type="date" id="editProfileDob" />
       </div>
 
-      <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <div class="field">
+        <label>Nasty Secrets / Kinks</label>
+        <textarea id="editProfileNasty" rows="3" placeholder="Sucking, Spanking, Dominant, etc."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Anniversary / Meet Date</label>
+        <input type="date" id="editAnniversary" />
+      </div>
+
+      <div class="field">
+        <label>Theme Preset</label>
+        <select id="themeSelect">
+          <option value="midnight">Deep Midnight</option>
+          <option value="crimson">Crimson Rose</option>
+          <option value="gold">Forbidden Gold</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Accent Color Picker</label>
+        <input type="color" id="accentColorPicker" />
+      </div>
+
+      <div class="field">
+        <label>Custom Chat Room Name</label>
+        <input type="text" id="customRoomNameInput" placeholder="Change Room Name" />
+      </div>
+
+      <div class="field">
+        <label>Profile Picture</label>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+          <img id="avatarPreviewBox" src="" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); display:none;" />
+          <span style="font-size:0.8rem; color:var(--muted);">Select picture from your phone</span>
+        </div>
+        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
+        <button class="btn ghost text-center" id="avatarFileBtn">🖼️ Choose Photo from Gallery</button>
+        <div id="avatarUploadStatus" style="font-size:0.75rem; color:var(--success); margin-top:4px;"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 26px;">
         <button class="btn ghost" id="cancelProfileBtn">Cancel</button>
-        <button class="btn gold" id="saveProfileBtn">Update Profile</button>
+        <button class="btn gold" id="saveProfileBtn">Update Portal Info</button>
       </div>
     </div>
   </div>
 
-  <!-- Call Line Elements -->
   <div class="incoming-banner" id="incomingBanner">
-    <span style="color:var(--gold); font-weight:600;" id="incomingCallLabel">Incoming Secure Connection...</span>
+    <span style="color:var(--gold); font-weight:600;" id="incomingCallLabel">Incoming Call...</span>
     <button class="btn small gold" id="acceptCallBtn">Answer</button>
     <button class="btn small danger" id="declineCallBtn">Decline</button>
   </div>
 
   <div id="callOverlay">
-    <div style="color:var(--gold); margin-bottom:14px;" id="callStatusMessage">Connecting Live Feed...</div>
+    <div class="timer-overlay" id="callTimer">00:00</div>
+    <div style="color:var(--gold); margin-bottom:14px; font-size:1.2rem;" id="callStatusMessage">Connecting Live Call Line...</div>
     <div class="video-stage">
       <video id="remoteVideo" autoplay playsinline></video>
       <video id="localVideo" autoplay playsinline muted></video>
     </div>
-    <div style="margin-top:20px;">
-      <button class="btn danger" style="padding:10px 40px;" id="hangupCallBtn">Disconnect</button>
+    <div class="call-controls">
+      <button class="icon-btn" style="background:#555;" title="Switch Camera" id="switchCamBtn">🔄</button>
+      <button class="icon-btn" style="background:#444;" title="Screen Share" id="screenShareBtn">🖥️</button>
+      <button class="icon-btn" style="background:#a68e38;" title="Reconnect Stream" id="reconnectCallBtn">⚡</button>
+      <button class="icon-btn" style="background:var(--danger); width:60px; height:60px;" id="hangupCallBtn">✖</button>
     </div>
   </div>
 
@@ -280,35 +427,70 @@
     let peer = null;
     let currentCall = null;
     let localStream = null;
-    let uploadedAvatarBase64 = null;
-    let detectedProfileIdKey = 'id';
+    let screenStream = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+    let typingTimeout = null;
     let broadcastChannel = null;
+    let selectedPostFile = null;
+    let uploadedAvatarUrl = null;
+    
+    let isEditingMsgId = null;
+    let replyingToMsgId = null;
+    let activeCameraFacing = "user";
+    let callInterval = null;
+    let callSeconds = 0;
+    
+    let detectedProfileIdKey = 'id';
 
-    const spicyPrompts = [
-      "Truth: What is one secret fantasy you haven't told your partner yet?",
-      "Dare: Take a spicy photo right now and drop it into the chat box.",
-      "Truth: What was the exact moment you realized you were deeply attracted to me?",
-      "Dare: Send a voice note describing exactly what you want to do to me next time we meet.",
-      "Truth: If we could do anything right now without rules, what would it be?",
-      "Dare: Change your status mood setting to the dirtiest option available right now."
-    ];
-
-    document.getElementById('sidebarToggleBtn').addEventListener('click', () => document.getElementById('appSidebar').classList.toggle('open'));
+    document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
+      document.getElementById('appSidebar').classList.toggle('open');
+    });
+    document.getElementById('toRegisterLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(true); });
+    document.getElementById('toLoginLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(false); });
     document.getElementById('loginSubmitBtn').addEventListener('click', handleAuthentication);
+    document.getElementById('registerSubmitBtn').addEventListener('click', handleRegistration);
+    document.getElementById('pendingDisconnectBtn').addEventListener('click', signOutSession);
     document.getElementById('logoutBtn').addEventListener('click', signOutSession);
     document.getElementById('topProfileBlock').addEventListener('click', openMySettings);
-    document.getElementById('cancelProfileBtn').addEventListener('click', () => document.getElementById('profileModal').classList.remove('active'));
+    document.getElementById('cancelProfileBtn').addEventListener('click', closeProfileModal);
     document.getElementById('saveProfileBtn').addEventListener('click', saveProfileChanges);
-    document.getElementById('avatarFileBtn').addEventListener('click', () => document.getElementById('avatarFileInput').click());
-    document.getElementById('avatarFileInput').addEventListener('change', handleAvatarFileSelected);
-    document.getElementById('rollSpicyBtn').addEventListener('click', rollNewSpicyPrompt);
-    document.getElementById('sendBtn').addEventListener('click', sendTextMessage);
+    document.getElementById('addBucketBtn').addEventListener('click', addToBucketList);
     document.getElementById('voiceCallBtn').addEventListener('click', () => makePeerCall(false));
     document.getElementById('videoCallBtn').addEventListener('click', () => makePeerCall(true));
+    document.getElementById('tabChatBtn').addEventListener('click', () => switchTab('chat'));
+    document.getElementById('tabTimelineBtn').addEventListener('click', () => switchTab('timeline'));
+    document.getElementById('cancelReplyBtn').addEventListener('click', cancelMessageReply);
+    document.getElementById('attachFileBtn').addEventListener('click', () => document.getElementById('chatFileInput').click());
+    document.getElementById('chatFileInput').addEventListener('change', (e) => handleChatUpload(e.target));
+    document.getElementById('voiceRecBtn').addEventListener('click', toggleVoiceRecording);
+    document.getElementById('cancelVoiceBtn').addEventListener('click', cancelVoiceRecording);
+    document.getElementById('sendVoiceBtn').addEventListener('click', stopAndSendVoice);
+    document.getElementById('sendBtn').addEventListener('click', sendTextMessage);
+    document.getElementById('chatInput').addEventListener('input', broadcastTypingStatus);
+    document.getElementById('postFileBtn').addEventListener('click', () => document.getElementById('postFileInput').click());
+    document.getElementById('postFileInput').addEventListener('change', (e) => handlePostFileSelected(e.target));
+    document.getElementById('submitPostBtn').addEventListener('click', submitTimelinePost);
+    document.getElementById('closeInspectBtn').addEventListener('click', () => document.getElementById('profileInspectModal').classList.remove('active'));
+    document.getElementById('avatarFileBtn').addEventListener('click', () => document.getElementById('avatarFileInput').click());
+    document.getElementById('avatarFileInput').addEventListener('change', (e) => handleAvatarFileSelected(e.target));
+    document.getElementById('editAnniversary').addEventListener('change', (e) => saveAnniversary(e.target.value));
+    document.getElementById('themeSelect').addEventListener('change', (e) => applyPortalTheme(e.target.value));
+    document.getElementById('accentColorPicker').addEventListener('change', (e) => applyAccentColor(e.target.value));
+    document.getElementById('customRoomNameInput').addEventListener('change', (e) => changeRoomName(e.target.value));
+    document.getElementById('myMoodSelect').addEventListener('change', (e) => updateMyMood(e.target.value));
     document.getElementById('acceptCallBtn').addEventListener('click', acceptIncomingCall);
     document.getElementById('declineCallBtn').addEventListener('click', rejectIncomingCall);
+    document.getElementById('switchCamBtn').addEventListener('click', switchVideoCamera);
+    document.getElementById('screenShareBtn').addEventListener('click', toggleScreenSharing);
+    document.getElementById('reconnectCallBtn').addEventListener('click', reconnectActiveCall);
     document.getElementById('hangupCallBtn').addEventListener('click', hangupActiveCall);
-    document.getElementById('myMoodSelect').addEventListener('change', (e) => updateMyMood(e.target.value));
+
+    function toggleAuthMode(toRegister) {
+      document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
+      document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
+    }
 
     async function handleAuthentication() {
       const email = document.getElementById('authEmail').value.trim();
@@ -316,6 +498,20 @@
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) { document.getElementById('authErr').textContent = error.message; return; }
       checkSessionState(data.user);
+    }
+
+    async function handleRegistration() {
+      const name = document.getElementById('regName').value.trim();
+      const email = document.getElementById('regEmail').value.trim();
+      const password = document.getElementById('regPassword').value;
+      const { data, error } = await supabaseClient.auth.signUp({ email, password });
+      if(error) { alert(error.message); return; }
+      if(data.user) {
+        const insertPayload = { name: name, status: 'approved' };
+        insertPayload[detectedProfileIdKey] = data.user.id;
+        await supabaseClient.from('profiles').insert([insertPayload]);
+        checkSessionState(data.user);
+      }
     }
 
     async function checkSessionState(user) {
@@ -328,7 +524,11 @@
       for(let key of primaryKeysToTry) {
         try {
           const { data, error } = await supabaseClient.from('profiles').select('*').eq(key, user.id).maybeSingle();
-          if(!error && data) { detectedProfileIdKey = key; profile = data; break; }
+          if(!error && data) {
+            detectedProfileIdKey = key;
+            profile = data;
+            break;
+          }
         } catch(e){}
       }
 
@@ -336,49 +536,72 @@
         const { data } = await supabaseClient.from('profiles').select('*').limit(5);
         if(data && data.length > 0) {
           profile = data.find(p => p.id === user.id || p.uid === user.id || p.user_id === user.id);
-          if(profile) detectedProfileIdKey = profile.id ? 'id' : (profile.uid ? 'uid' : 'user_id');
+          if(profile) {
+            detectedProfileIdKey = profile.id ? 'id' : (profile.uid ? 'uid' : 'user_id');
+          }
         }
       }
 
-      if (profile) initializePortal(profile);
+      if (!profile || profile.status !== 'approved') { showScreen('pendingScreen'); return; }
+      initializePortal(profile);
     }
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (session && session.user) checkSessionState(session.user);
+      else showScreen('authScreen');
     });
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    async function signOutSession() {
+      if(peer) peer.destroy();
+      await supabaseClient.auth.signOut();
+      location.reload();
+    }
 
     function openMySettings() {
       const myProfile = cachedProfiles[currentUser.id] || {};
       document.getElementById('editProfileName').value = myProfile.name || '';
       document.getElementById('editProfileDob').value = myProfile.dob || '';
+      document.getElementById('editProfileNasty').value = myProfile.nasty_details || '';
+      document.getElementById('avatarUploadStatus').textContent = "";
       
       const previewBox = document.getElementById('avatarPreviewBox');
       if (myProfile.avatar_url) {
         previewBox.src = myProfile.avatar_url;
         previewBox.style.display = 'block';
+      } else {
+        previewBox.style.display = 'none';
       }
+      
+      uploadedAvatarUrl = myProfile.avatar_url || null;
       document.getElementById('profileModal').classList.add('active');
     }
-
-    function handleAvatarFileSelected(e) {
-      const file = e.target.files[0];
+    
+    function closeProfileModal() { document.getElementById('profileModal').classList.remove('active'); }
+    
+    async function handleAvatarFileSelected(inputElement) {
+      const file = inputElement.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        // Safe Compression Routine to pass through extension loops cleanly
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          canvas.width = 120;
-          canvas.height = 120;
-          ctx.drawImage(img, 0, 0, 120, 120);
+          canvas.width = 150;
+          canvas.height = 150;
+          ctx.drawImage(img, 0, 0, 150, 150);
           
-          uploadedAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
-          document.getElementById('avatarPreviewBox').src = uploadedAvatarBase64;
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+          document.getElementById('avatarPreviewBox').src = compressedBase64;
           document.getElementById('avatarPreviewBox').style.display = 'block';
-          document.getElementById('avatarFileBtn').textContent = "✅ Photo Processed";
+          uploadedAvatarUrl = compressedBase64;
+          document.getElementById('avatarFileBtn').textContent = "✅ Prepared Successfully";
         };
         img.src = evt.target.result;
       };
@@ -386,77 +609,159 @@
     }
 
     async function saveProfileChanges() {
-      const name = document.getElementById('editProfileName').value.trim();
+      const updatedName = document.getElementById('editProfileName').value.trim();
       const dob = document.getElementById('editProfileDob').value;
-      if(!name) return;
-
-      const payload = { name, dob };
-      if(uploadedAvatarBase64) payload.avatar_url = uploadedAvatarBase64;
-
-      await supabaseClient.from('profiles').update(payload).eq(detectedProfileIdKey, currentUser.id);
-      document.getElementById('profileModal').classList.remove('active');
+      const nasty = document.getElementById('editProfileNasty').value;
+      if(!updatedName) return alert("Nickname field required");
+      
+      const updateData = {
+        name: updatedName,
+        dob: dob,
+        nasty_details: nasty,
+        avatar_url: uploadedAvatarUrl
+      };
+      
+      const { error } = await supabaseClient.from('profiles').update(updateData).eq(detectedProfileIdKey, currentUser.id);
+      if(error) { 
+        alert("Error saving fields: " + error.message); 
+        return; 
+      }
+      
+      closeProfileModal();
       location.reload();
     }
 
-    function rollNewSpicyPrompt() {
-      const randomPrompt = spicyPrompts[Math.floor(Math.random() * spicyPrompts.length)];
-      document.getElementById('spicyPromptUi').textContent = randomPrompt;
-      if(broadcastChannel) {
-        broadcastChannel.send({ type: 'broadcast', event: 'spicyRoll', payload: { text: randomPrompt } });
+    function applyPortalTheme(themeClass) {
+      document.body.className = '';
+      document.body.classList.add(`theme-${themeClass}`);
+      localStorage.setItem('user-theme', themeClass);
+    }
+
+    function applyAccentColor(colorHex) {
+      document.documentElement.style.setProperty('--gold', colorHex);
+      localStorage.setItem('user-accent', colorHex);
+    }
+
+    function changeRoomName(roomName) {
+      if(!roomName) return;
+      document.getElementById('topBarTitle').textContent = roomName;
+      localStorage.setItem('custom-room-title', roomName);
+    }
+
+    function inspectPartnerProfile(partnerId) {
+      const profile = cachedProfiles[partnerId] || { name: 'Partner' };
+      document.getElementById('inspectAvatar').src = profile.avatar_url || '';
+      window.handleAvatarError(document.getElementById('inspectAvatar'), profile.name);
+      document.getElementById('inspectName').textContent = profile.name;
+      
+      let formattedDob = "Not Specified";
+      if (profile.dob) {
+        const parsedDate = new Date(profile.dob);
+        if (!isNaN(parsedDate)) {
+          formattedDob = parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+        }
+      }
+      document.getElementById('inspectDob').textContent = formattedDob;
+      document.getElementById('inspectNasty').textContent = profile.nasty_details || "No dirty details declared yet...";
+      document.getElementById('profileInspectModal').classList.add('active');
+    }
+
+    function switchTab(target) {
+      document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      if(target === 'chat') {
+        document.getElementById('panelChat').classList.add('active');
+        document.getElementById('tabChatBtn').classList.add('active');
+        markAllAsRead();
+      } else {
+        document.getElementById('panelTimeline').classList.add('active');
+        document.getElementById('tabTimelineBtn').classList.add('active');
       }
     }
 
     async function initializePortal(myProfile) {
-      document.getElementById('whoLine').textContent = `Welcome, ${myProfile.name}`;
-      if(myProfile.avatar_url) document.getElementById('myAvatarDisplay').src = myProfile.avatar_url;
-      else document.getElementById('myAvatarDisplay').src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(myProfile.name);
+      const savedTheme = localStorage.getItem('user-theme') || 'midnight';
+      applyPortalTheme(savedTheme);
+      document.getElementById('themeSelect').value = savedTheme;
 
-      document.getElementById('authScreen').classList.remove('active');
-      document.getElementById('appScreen').classList.add('active');
+      const savedAccent = localStorage.getItem('user-accent');
+      if(savedAccent) {
+        applyAccentColor(savedAccent);
+        document.getElementById('accentColorPicker').value = savedAccent;
+      }
+
+      const savedRoomName = localStorage.getItem('custom-room-title');
+      if(savedRoomName) changeRoomName(savedRoomName);
+
+      document.getElementById('whoLine').textContent = `Logged in: ${myProfile.name}`;
+      document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || '';
+      window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
+      showScreen('appScreen');
 
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) {
         profiles.forEach(p => {
-          const actualId = p.id || p.uid || p.user_id;
-          if(actualId) cachedProfiles[actualId] = p;
+          const actualUid = p.id || p.uid || p.user_id;
+          if(actualUid) cachedProfiles[actualUid] = p;
         });
       }
 
-      // Dynamic Resilient Peer Configuration to completely ignore extension blocks
-      const cleanPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
-      peer = new Peer(cleanPeerId, {
+      const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
+      peer = new Peer(sanitizedPeerId, {
         host: '0.peerjs.com', port: 443, path: '/', secure: true,
+        config: { iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' }
+        ]},
         debug: 1
       });
 
       peer.on('call', (incomingCall) => {
         currentCall = incomingCall;
+        document.getElementById('incomingCallLabel').textContent = "📱 Incoming Call Line...";
         document.getElementById('incomingBanner').classList.add('active');
       });
 
-      setupRealtimeSyncer();
-      fetchMessages();
+      fetchChatHistory();
+      fetchTimelinePosts();
+      setupPresenceAndBroadcasts(myProfile.name);
+      loadAnniversary();
+      loadBucketList();
     }
 
-    async function makePeerCall(videoMode) {
+    function startCallTimer() {
+      callSeconds = 0;
+      clearInterval(callInterval);
+      callInterval = setInterval(() => {
+        callSeconds++;
+        const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+        const secs = String(callSeconds % 60).padStart(2, '0');
+        document.getElementById('callTimer').textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    async function makePeerCall(wantsVideo) {
       document.getElementById('callOverlay').classList.add('active');
-      document.getElementById('callStatusMessage').textContent = "Pinging media line...";
-
+      document.getElementById('callStatusMessage').textContent = "Ringing partner line...";
+      
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: videoMode });
+        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
         document.getElementById('localVideo').srcObject = localStream;
-
+        
         const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
         if(!partnerId) return;
-        const cleanPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
-
-        currentCall = peer.call(cleanPartnerId, localStream);
+        const sanitizedPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
+        
+        currentCall = peer.call(sanitizedPartnerId, localStream);
+        startCallTimer();
+        
         currentCall.on('stream', rStream => {
-          document.getElementById('callStatusMessage').textContent = "Secure Line Connected";
+          document.getElementById('callStatusMessage').textContent = "Line Active";
           document.getElementById('remoteVideo').srcObject = rStream;
         });
       } catch (err) {
-        alert("Microphone/Camera lines are currently unavailable or blocked by browser extensions.");
+        alert("Unable to fetch media tracks. Ensure camera/microphone permissions are granted.");
         hangupActiveCall();
       }
     }
@@ -464,86 +769,393 @@
     async function acceptIncomingCall() {
       document.getElementById('incomingBanner').classList.remove('active');
       document.getElementById('callOverlay').classList.add('active');
+      document.getElementById('callStatusMessage').textContent = "Connecting Secure Stream...";
       
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
         document.getElementById('localVideo').srcObject = localStream;
-        
         currentCall.answer(localStream);
+        startCallTimer();
+        
         currentCall.on('stream', rStream => {
-          document.getElementById('callStatusMessage').textContent = "Secure Line Connected";
+          document.getElementById('callStatusMessage').textContent = "Line Active";
           document.getElementById('remoteVideo').srcObject = rStream;
         });
       } catch(err) {
+        alert("Failed to access camera/mic line.");
         hangupActiveCall();
       }
     }
 
-    function rejectIncomingCall() {
-      document.getElementById('incomingBanner').classList.remove('active');
-      if(currentCall) currentCall.close();
+    async function switchVideoCamera() {
+      if(!localStream) return;
+      const videoTrack = localStream.getVideoTracks()[0];
+      if(!videoTrack) return;
+      
+      activeCameraFacing = (activeCameraFacing === "user") ? "environment" : "user";
+      videoTrack.stop();
+      
+      const newVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: activeCameraFacing } });
+      const newTrack = newVideo.getVideoTracks()[0];
+      localStream.addTrack(newTrack);
+      document.getElementById('localVideo').srcObject = localStream;
     }
 
+    async function toggleScreenSharing() {
+      try {
+        if(!screenStream) {
+          screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+          const videoTrack = screenStream.getVideoTracks()[0];
+          const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
+          if(sender) sender.replaceTrack(videoTrack);
+        } else {
+          screenStream.getTracks().forEach(t => t.stop());
+          screenStream = null;
+          reconnectActiveCall();
+        }
+      } catch(err) {}
+    }
+
+    function reconnectActiveCall() {
+      hangupActiveCall();
+      makePeerCall(true);
+    }
+
+    function rejectIncomingCall() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); }
+    
     function hangupActiveCall() {
       document.getElementById('callOverlay').classList.remove('active');
+      clearInterval(callInterval);
       if(currentCall) currentCall.close();
-      if(localStream) localStream.getTracks().forEach(track => track.stop());
+      if(localStream) localStream.getTracks().forEach(t=>t.stop());
+      if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
     }
 
-    async function fetchMessages() {
-      const { data } = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-      if(data) {
-        const area = document.getElementById('chatArea');
-        area.innerHTML = '';
-        data.forEach(msg => {
-          const box = document.createElement('div');
-          const isMe = msg.sender_uid === currentUser.id;
-          box.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
-          box.innerHTML = `<div class="msg">${msg.text}</div>`;
-          area.appendChild(box);
-        });
-        area.scrollTop = area.scrollHeight;
+    async function fetchChatHistory() {
+      try {
+        let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+        if (response.data) {
+          const chatArea = document.getElementById('chatArea');
+          chatArea.innerHTML = '';
+          response.data.forEach(msg => renderMessageBubble(msg));
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      } catch (err) {}
+    }
+
+    function renderMessageBubble(msg) {
+      if(document.getElementById(`msg-${msg.id}`)) return;
+      const chatArea = document.getElementById('chatArea');
+      const isMe = msg.sender_uid === currentUser.id;
+      const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
+      
+      const row = document.createElement('div');
+      row.id = `msg-${msg.id}`;
+      row.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
+      
+      let mediaMarkup = '';
+      if (msg.media_url) {
+        if (msg.media_type === 'image') mediaMarkup = `<img src="${msg.media_url}" />`;
+        else if (msg.media_type === 'video') mediaMarkup = `<video src="${msg.media_url}" style="max-width:100%;" controls></video>`;
+        else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
       }
+
+      let replyMarkup = msg.reply_to_text ? `<div style="font-size:0.75rem; background:rgba(0,0,0,0.1); border-left:2px solid var(--gold); padding:4px; margin-bottom:4px;">${msg.reply_to_text}</div>` : '';
+
+      let tickMarkup = '';
+      if(isMe) {
+        const tickColor = msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);';
+        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${msg.is_read ? '✓✓' : '✓'}</span>`;
+      }
+
+      const avatarSrc = profile.avatar_url || '';
+
+      row.innerHTML = `
+        <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" />
+        <div class="msg-content-block">
+          <span class="sender-label">${profile.name}</span>
+          <div class="msg">
+            <div class="msg-actions">
+              <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media Message'}">Reply</button>
+              ${isMe ? `<button class="msg-edit-act-btn" data-id="${msg.id}" data-text="${msg.text || ''}">Edit</button>` : ''}
+            </div>
+            ${replyMarkup}
+            <div id="text-node-${msg.id}">${msg.text ? `<div>${msg.text}</div>` : ''}</div>
+            ${mediaMarkup}
+            <div class="msg-meta-line">
+              ${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              ${tickMarkup}
+            </div>
+          </div>
+        </div>
+      `;
+
+      row.querySelector('.msg-reply-act-btn').addEventListener('click', (e) => {
+        setMessageReply(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
+      });
+      if(isMe) {
+        row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => {
+          editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
+        });
+      }
+      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(msg.sender_uid));
+
+      chatArea.appendChild(row);
+      window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    function setMessageReply(id, partialText) {
+      replyingToMsgId = id;
+      const hud = document.getElementById('replyHud');
+      document.getElementById('replyHudText').textContent = `Replying to: "${partialText}"`;
+      hud.classList.add('active');
+    }
+
+    function cancelMessageReply() {
+      replyingToMsgId = null;
+      document.getElementById('replyHud').classList.remove('active');
+    }
+
+    function editYourMessage(id, oldText) {
+      isEditingMsgId = id;
+      document.getElementById('chatInput').value = oldText;
+      document.getElementById('sendBtn').textContent = "Update";
     }
 
     async function sendTextMessage() {
       const input = document.getElementById('chatInput');
-      const text = input.value.trim();
-      if(!text) return;
+      const txt = input.value.trim();
+      if(!txt) return;
       input.value = '';
 
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text }]);
-      fetchMessages();
+      if(isEditingMsgId) {
+        await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
+        const txtNode = document.getElementById(`text-node-${isEditingMsgId}`);
+        if(txtNode) txtNode.innerHTML = `<div>${txt}</div>`;
+        isEditingMsgId = null;
+        document.getElementById('sendBtn').textContent = "Send";
+        return;
+      }
+
+      let replyData = null;
+      if(replyingToMsgId) {
+        replyData = document.getElementById('replyHudText').textContent;
+        cancelMessageReply();
+      }
+
+      const basePayload = { 
+        sender_uid: currentUser.id, 
+        text: txt, 
+        is_read: false,
+        reply_to_text: replyData
+      };
+
+      await supabaseClient.from('messages').insert([basePayload]);
+    }
+
+    async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
+    async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
+
+    async function handleChatUpload(inputElement) {
+      const file = inputElement.files[0]; if (!file) return;
+      const uniqueName = `${Date.now()}-${file.name}`;
+      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
+      if (error) return;
+      const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+      let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
+      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
+    }
+
+    function toggleVoiceRecording() {
+      if (!isRecording) {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+          mediaRecorder.start();
+          isRecording = true;
+          document.getElementById('voiceRecordOverlay').classList.add('active');
+        }).catch(err => alert("Microphone hardware access denied."));
+      }
+    }
+
+    function cancelVoiceRecording() {
+      if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
+      document.getElementById('voiceRecordOverlay').classList.remove('active');
+    }
+
+    function stopAndSendVoice() {
+      if(mediaRecorder) {
+        mediaRecorder.onstop = async () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+          const file = new File([audioBlob], "voice.webm");
+          const uniqueName = `${Date.now()}-voice.webm`;
+          await supabaseClient.storage.from('media').upload(uniqueName, file);
+          const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
+        };
+        mediaRecorder.stop();
+        isRecording = false;
+      }
+      document.getElementById('voiceRecordOverlay').classList.remove('active');
     }
 
     async function updateMyMood(mood) {
       if(broadcastChannel) {
         broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
       }
+      localStorage.setItem('my-mood', mood);
     }
 
-    function setupRealtimeSyncer() {
-      broadcastChannel = supabaseClient.channel('portal-sync');
+    async function setupPresenceAndBroadcasts(username) {
+      try {
+        await supabaseClient.removeAllChannels();
+      } catch (err) {}
+
+      broadcastChannel = supabaseClient.channel('room-communications');
       
       broadcastChannel
-        .on('broadcast', { event: 'spicyRoll' }, payload => {
-          document.getElementById('spicyPromptUi').textContent = payload.payload.text;
+        .on('presence', { event: 'sync' }, () => {
+          const state = broadcastChannel.presenceState();
+          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+          const dot = document.getElementById('presenceIndicator');
+          if(partnerId && state[partnerId]) dot.classList.add('online');
+          else dot.classList.remove('online');
+        })
+        .on('broadcast', { event: 'typing' }, payload => {
+          const indicator = document.getElementById('typingIndicatorField');
+          indicator.textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
         })
         .on('broadcast', { event: 'mood' }, payload => {
           if(payload.payload.uid !== currentUser.id) {
             document.getElementById('partnerMoodDisplay').textContent = `Partner: ${payload.payload.mood}`;
           }
-        })
-        .subscribe();
+        });
 
-      supabaseClient.channel('table-monitor')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => fetchMessages())
+      broadcastChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await broadcastChannel.track({ name: username, online_at: new Date().toISOString() });
+          const myMood = localStorage.getItem('my-mood') || 'Normal';
+          document.getElementById('myMoodSelect').value = myMood;
+          broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood: myMood } });
+        }
+      });
+
+      supabaseClient.channel('table-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
+          renderMessageBubble(payload.new); 
+          if(payload.new.sender_uid !== currentUser.id) markAsRead(payload.new.id);
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
+          const txtNode = document.getElementById(`text-node-${payload.new.id}`);
+          if(txtNode && payload.new.text) txtNode.innerHTML = `<div>${payload.new.text}</div>`;
+        })
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
         .subscribe();
     }
 
-    async function signOutSession() {
-      await supabaseClient.auth.signOut();
-      location.reload();
+    function broadcastTypingStatus() {
+      if(!broadcastChannel) return;
+      broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => {
+        broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
+      }, 2000);
+    }
+
+    function saveAnniversary(val) {
+      localStorage.setItem('anniversary-date', val);
+      calculateAnniversary(val);
+    }
+
+    function loadAnniversary() {
+      const val = localStorage.getItem('anniversary-date') || "2024-01-01";
+      document.getElementById('editAnniversary').value = val;
+      calculateAnniversary(val);
+    }
+
+    function calculateAnniversary(dateStr) {
+      const ann = new Date(dateStr);
+      const diff = Date.now() - ann.getTime();
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
+    }
+
+    function addToBucketList() {
+      const item = prompt("Add a wild goal to our Bucket List:");
+      if(!item) return;
+      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
+      list.push(item);
+      localStorage.setItem('couple-bucket', JSON.stringify(list));
+      renderBucketList();
+    }
+
+    function loadBucketList() { renderBucketList(); }
+    
+    function renderBucketList() {
+      const list = JSON.parse(localStorage.getItem('couple-bucket') || '["Explore Tokyo", "Midnight skinny dip"]');
+      const container = document.getElementById('bucketListUi');
+      container.innerHTML = '';
+      list.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>🔥 ${item}</span><span class="del-bucket-btn" data-idx="${index}" style="color:var(--danger); cursor:pointer;">✕</span>`;
+        li.querySelector('.del-bucket-btn').addEventListener('click', (e) => {
+          deleteBucket(parseInt(e.target.getAttribute('data-idx')));
+        });
+        container.appendChild(li);
+      });
+    }
+
+    function deleteBucket(index) {
+      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
+      list.splice(index, 1);
+      localStorage.setItem('couple-bucket', JSON.stringify(list));
+      renderBucketList();
+    }
+
+    async function fetchTimelinePosts() {
+      const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+      if (data) {
+        const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
+        data.forEach(post => {
+          const profile = cachedProfiles[post.sender_uid] || { name: 'Partner' };
+          const card = document.createElement('div'); card.className = 'post-card';
+          const avatarSrc = profile.avatar_url || '';
+          card.innerHTML = `
+            <div class="post-header">
+              <img src="${avatarSrc}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
+              <div>
+                <div class="post-author">${profile.name}</div>
+                <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div class="post-body">${post.text || ''}</div>
+            ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
+          `;
+          feed.appendChild(card);
+          window.handleAvatarError(document.getElementById(`post-av-${post.id}`), profile.name);
+        });
+      }
+    }
+
+    function handlePostFileSelected(el) {
+      selectedPostFile = el.files[0];
+      if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ File Selected";
+    }
+
+    async function submitTimelinePost() {
+      const textInput = document.getElementById('postText'); const text = textInput.value.trim();
+      if(!text && !selectedPostFile) return;
+      let mediaUrl = null;
+      if(selectedPostFile) {
+        const uniqueName = `${Date.now()}-${selectedPostFile.name}`;
+        await supabaseClient.storage.from('media').upload(uniqueName, selectedPostFile);
+        const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+        mediaUrl = data.publicUrl;
+      }
+      await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
+      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
     }
   </script>
 </body>
