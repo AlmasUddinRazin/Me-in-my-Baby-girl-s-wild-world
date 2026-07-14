@@ -1106,7 +1106,24 @@
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchChatHistory())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, () => loadBucketList())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchTimelinePosts());
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchTimelinePosts())
+        // GLOBAL PROFILES LISTENER: Realtime detects photo/avatar updates & updates cache globally
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, async (payload) => {
+          const updatedProfile = payload.new;
+          const uId = updatedProfile.id || updatedProfile.uid || updatedProfile.user_id;
+          if (uId) {
+            cachedProfiles[uId] = { ...cachedProfiles[uId], ...updatedProfile };
+            
+            // If the updated profile is me, update my avatar on screen
+            if (uId === currentUser.id) {
+              const myAvatar = updatedProfile.avatar_url || updatedProfile.avatar || updatedProfile.profile_pic;
+              if (myAvatar) document.getElementById('myAvatarDisplay').src = myAvatar;
+            }
+            // Dynamically refresh chats and feed with newly updated avatar without manual refresh
+            fetchChatHistory();
+            fetchTimelinePosts();
+          }
+        });
 
       broadcastChannel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
