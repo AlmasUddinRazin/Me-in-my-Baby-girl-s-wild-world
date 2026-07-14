@@ -6,7 +6,7 @@
   <title>👅 Our Wild World</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght=0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght=0,400;0,500;0,600;1,500&family=Inter:wght=400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   
   <style>
@@ -114,13 +114,11 @@
     .msg-row.theirs .msg-content-block { align-items: flex-start; }
     .sender-label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; padding: 0 4px; font-weight: 600; }
     
-    /* Redesigned Bubble Layout - No more floating absolute hover pop-ups */
     .msg { padding:12px 16px; border-radius:16px; line-height:1.45; font-size:0.95rem; word-wrap:break-word; width: 100%; position: relative; }
     .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
     .msg img { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
     
-    /* Action Bar - Styled to look integrated and clean directly beneath message */
     .msg-actions-bar {
       display: flex; gap: 12px; margin-top: 6px; padding: 4px 8px;
       background: rgba(0, 0, 0, 0.2); border-radius: 8px; font-size: 0.75rem; align-items: center; width: max-content;
@@ -171,7 +169,6 @@
     .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
     .post-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; display: block; }
     
-    /* Timeline Actions Layout */
     .post-actions-bar { display: flex; gap: 16px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px; margin-top: 12px; }
     .post-action-btn { background: none; border: none; color: var(--gold); font-size: 0.82rem; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 500; }
 
@@ -187,14 +184,14 @@
   </style>
 
   <script>
-    // Robust Avatar Local Recovery
+    // Universal Robust Avatar Handlers
     window.handleAvatarError = function(img, name) { 
       img.onerror = null;
-      const cached = localStorage.getItem('avatar_url_cache');
-      if (cached && img.src !== cached) {
-        img.src = cached;
+      const localUrl = localStorage.getItem('local_avatar_url');
+      if (localUrl && img.src !== localUrl) {
+        img.src = localUrl;
       } else {
-        img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=" + encodeURIComponent(name || 'U'); 
+        img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=" + encodeURIComponent(name || 'Us'); 
       }
     };
   </script>
@@ -272,7 +269,7 @@
               </div>
               <div>
                 <h2 id="topBarTitle">👅 Our Wild World</h2>
-                <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Setting up profile...</div>
+                <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Online Status Checker...</div>
               </div>
             </div>
           </div>
@@ -452,7 +449,7 @@
     let typingTimeout = null;
     let broadcastChannel = null;
     let selectedPostFile = null;
-    let uploadedAvatarUrl = localStorage.getItem('avatar_url_cache') || null;
+    let uploadedAvatarUrl = localStorage.getItem('local_avatar_url') || null;
     
     let isEditingMsgId = null;
     let replyingToMsgId = null;
@@ -599,13 +596,13 @@
       document.getElementById('avatarFileBtn').textContent = "⌛ Uploading to Cloud...";
 
       const { error: uploadError } = await supabaseClient.storage.from('media').upload(uniqueName, file, { cacheControl: '3600', upsert: true });
-      if (uploadError) { alert("Upload fail: " + uploadError.message); return; }
+      if (uploadError) { alert("Upload failed: " + uploadError.message); return; }
 
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       uploadedAvatarUrl = urlData.publicUrl;
 
-      // Crucial Fix: Save instantly to localStorage so refresh doesn't wipe preview
-      localStorage.setItem('avatar_url_cache', uploadedAvatarUrl);
+      // Save to local persistence immediately
+      localStorage.setItem('local_avatar_url', uploadedAvatarUrl);
 
       document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
       document.getElementById('avatarPreviewBox').style.display = 'block';
@@ -626,7 +623,6 @@
       cachedProfiles[currentUser.id] = { ...cachedProfiles[currentUser.id], ...updateData };
       closeProfileModal();
       document.getElementById('myAvatarDisplay').src = uploadedAvatarUrl;
-      document.getElementById('whoLine').textContent = `Logged in: ${updatedName}`;
       fetchChatHistory();
     }
 
@@ -681,10 +677,7 @@
       if(localStorage.getItem('user-accent')) applyAccentColor(localStorage.getItem('user-accent'));
       if(localStorage.getItem('custom-room-title')) changeRoomName(localStorage.getItem('custom-room-title'));
 
-      document.getElementById('whoLine').textContent = `Logged in: ${myProfile.name}`;
-      
-      // Load avatar from localStorage cache if DB hasn't committed yet
-      const finalAvatar = myProfile.avatar_url || localStorage.getItem('avatar_url_cache') || '';
+      const finalAvatar = myProfile.avatar_url || localStorage.getItem('local_avatar_url') || '';
       document.getElementById('myAvatarDisplay').src = finalAvatar;
       window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
       showScreen('appScreen');
@@ -697,7 +690,6 @@
         });
       }
 
-      // Safe, randomized session suffix to bypass PeerJS ID clashes
       const sessionSuffix = Math.floor(Math.random() * 1000);
       const sanitizedPeerId = "wildworld-" + currentUser.id.replace(/[^a-zA-Z0-9]/g, '') + "-" + sessionSuffix;
       peer = new Peer(sanitizedPeerId, {
@@ -847,7 +839,6 @@
             <div class="reaction-container" id="react-holder-${msg.id}" style="display:flex; gap:4px; margin-top:4px; font-size:0.8rem;"></div>
             <div class="msg-meta-line">${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} ${tickMarkup}</div>
           </div>
-          <!-- Action controls are always neatly visible right under the bubble -->
           <div class="msg-actions-bar">
             <button class="msg-react-act-btn" data-id="${msg.id}">❤️ React</button>
             <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media'}">Reply</button>
@@ -900,15 +891,16 @@
       });
     }
 
-    // Timeline Post Reaction logic
     async function handlePostReactionToggle(postId) {
-      const chosenEmoji = "❤️";
       const { data } = await supabaseClient.from('posts').select('reactions').eq('id', postId).single();
       let reactions = data?.reactions || [];
-
+      
       const existingIndex = reactions.findIndex(r => r.uid === currentUser.id);
-      if (existingIndex > -1) reactions.splice(existingIndex, 1);
-      else reactions.push({ uid: currentUser.id, emoji: chosenEmoji });
+      if (existingIndex > -1) {
+        reactions.splice(existingIndex, 1);
+      } else {
+        reactions.push({ uid: currentUser.id, emoji: "❤️" });
+      }
 
       await supabaseClient.from('posts').update({ reactions }).eq('id', postId);
       fetchTimelinePosts();
@@ -990,15 +982,45 @@
       localStorage.setItem('my-mood', mood);
     }
 
-    // Fixed Realtime Lifecycle (on('presence') called BEFORE subscribe())
+    // FIXED SUPABASE REALTIME PRESENCE ENGINE (Calls .on() BEFORE calling .subscribe())
     async function setupPresenceAndBroadcasts(username) {
       broadcastChannel = supabaseClient.channel('room-communications');
+      
       broadcastChannel
         .on('presence', { event: 'sync' }, () => {
           const state = broadcastChannel.presenceState();
           const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
           const dot = document.getElementById('presenceIndicator');
-          if(partnerId && state[partnerId]) dot.classList.add('online'); else dot.classList.remove('online');
+          const whoLine = document.getElementById('whoLine');
+          const partner = partnerId ? cachedProfiles[partnerId] : null;
+          const partnerName = partner ? partner.name : "Partner";
+
+          if (partnerId && state[partnerId]) {
+            // Player is Online
+            dot.className = 'status-dot online';
+            whoLine.innerHTML = `<span style="color:var(--success); font-weight:bold;">Online</span>`;
+          } else {
+            // Player is Offline -> Fetch exact "Last Seen" timestamp
+            dot.className = 'status-dot';
+            const localLeft = localStorage.getItem(`last_seen_${partnerId || 'partner'}`);
+            if (localLeft) {
+              whoLine.innerHTML = `Last seen ${localLeft}`;
+            } else {
+              whoLine.innerHTML = `Offline`;
+            }
+          }
+        })
+        .on('presence', { event: 'join' }, ({ key, currentPresences }) => {
+          // No-op
+        })
+        .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
+          if (partnerId && leftPresences.some(p => p.presence_ref && key === partnerId)) {
+            const formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem(`last_seen_${partnerId}`, formattedTime);
+            document.getElementById('presenceIndicator').className = 'status-dot';
+            document.getElementById('whoLine').innerHTML = `Last seen ${formattedTime}`;
+          }
         })
         .on('broadcast', { event: 'typing' }, payload => {
           document.getElementById('typingIndicatorField').textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
@@ -1019,7 +1041,7 @@
       supabaseClient.channel('table-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchChatHistory())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, () => loadBucketList())
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => fetchTimelinePosts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchTimelinePosts())
         .subscribe();
     }
 
@@ -1067,24 +1089,23 @@
           const card = document.createElement('div'); card.className = 'post-card';
           
           let reactionList = post.reactions || [];
-          let myReactionCount = reactionList.filter(r => r.emoji === "❤️").length;
+          let loveCount = reactionList.filter(r => r.emoji === "❤️").length;
 
           card.innerHTML = `
             <div class="post-header">
-              <img src="${profile.avatar_url || ''}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
+              <img src="${profile.avatar_url || ''}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" onerror="window.handleAvatarError(this, '${profile.name}')" />
               <div><div class="post-author">${profile.name}</div><div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div></div>
             </div>
             <div class="post-body">${post.text || ''}</div>
             ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
             <div class="post-actions-bar">
               <button class="post-action-btn" data-postid="${post.id}">
-                ❤️ React (${myReactionCount})
+                ❤️ React (${loveCount})
               </button>
             </div>
           `;
           card.querySelector('.post-action-btn').addEventListener('click', () => handlePostReactionToggle(post.id));
           feed.appendChild(card);
-          window.handleAvatarError(document.getElementById(`post-av-${post.id}`), profile.name);
         });
       }
     }
