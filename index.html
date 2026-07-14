@@ -430,9 +430,6 @@
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
     const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
-    
-    const MY_UID = "8cc7c466-e340-4be2-aaf6-51e697b656cd";
-    const HER_UID = "edfbab5f-bf54-49db-b5e3-a73c1af0486f";
 
     let currentUser = null; 
     let cachedProfiles = {};
@@ -518,9 +515,8 @@
       const { data, error } = await supabaseClient.auth.signUp({ email, password });
       if(error) { alert(error.message); return; }
       if(data.user) {
-        const targetId = data.user.email.includes("babygirl") || name.toLowerCase().includes("baby") ? HER_UID : MY_UID;
-        const insertPayload = { name: name, status: 'approved' };
-        insertPayload[detectedProfileIdKey] = targetId;
+        // Safe database schema write under their REAL Supabase Auth user.id:
+        const insertPayload = { name: name, status: 'approved', id: data.user.id };
         await supabaseClient.from('profiles').insert([insertPayload]);
         checkSessionState(data.user);
       }
@@ -528,13 +524,7 @@
 
     async function checkSessionState(user) {
       if (!user) return;
-      currentUser = user;
-      
-      let assignedUid = MY_UID;
-      if (user.id === HER_UID || user.email.toLowerCase().includes("babygirl")) {
-        assignedUid = HER_UID;
-      }
-      currentUser.id = assignedUid; 
+      currentUser = user; // Keep actual secure Supabase authenticated credentials
 
       let profile = null;
       let primaryKeysToTry = ['id', 'uid', 'user_id'];
@@ -553,7 +543,20 @@
         }
       }
 
-      if (!profile || profile.status !== 'approved') { showScreen('pendingScreen'); return; }
+      // Automatically approve profiles to prevent her from getting locked behind the pending screen
+      if (!profile) {
+        const insertPayload = { name: user.email.split('@')[0], status: 'approved' };
+        insertPayload[detectedProfileIdKey || 'id'] = currentUser.id;
+        const { data: newProf } = await supabaseClient.from('profiles').insert([insertPayload]).select().single();
+        profile = newProf;
+      }
+
+      if (profile && profile.status !== 'approved') {
+        // Auto-approve if they have registered credentials to avoid locking her out
+        await supabaseClient.from('profiles').update({ status: 'approved' }).eq(detectedProfileIdKey || 'id', currentUser.id);
+        profile.status = 'approved';
+      }
+
       initializePortal(profile);
     }
 
@@ -652,8 +655,7 @@
     }
 
     function inspectPartnerProfile(partnerId) {
-      const targetUid = (partnerId === MY_UID) ? MY_UID : HER_UID;
-      const profile = cachedProfiles[targetUid] || { name: 'Partner' };
+      const profile = cachedProfiles[partnerId] || { name: 'Partner' };
       
       const inspectBox = document.getElementById('inspectAvatar');
       inspectBox.src = profile.avatar_url || profile.avatar || profile.profile_pic || '';
@@ -686,6 +688,13 @@
       }
     }
 
+    // Dynamic Partner ID lookup utility:
+    function getPartnerId() {
+      const profileKeys = Object.keys(cachedProfiles);
+      const partnerId = profileKeys.find(id => id !== currentUser.id);
+      return partnerId || "partner-fallback";
+    }
+
     async function refreshAllProfilesData() {
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) {
@@ -694,10 +703,6 @@
           rawIds.forEach(id => {
             cachedProfiles[id] = p;
           });
-          const isMe = rawIds.some(id => id === MY_UID);
-          const isHer = rawIds.some(id => id === HER_UID);
-          if (isMe) cachedProfiles[MY_UID] = p;
-          if (isHer) cachedProfiles[HER_UID] = p;
         });
       }
       const myProfile = cachedProfiles[currentUser.id] || {};
@@ -752,7 +757,7 @@
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
         document.getElementById('localVideo').srcObject = localStream;
         
-        const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
+        const partnerId = getPartnerId();
         const sanitizedPartnerId = "wildworld-" + partnerId.replace(/[^a-zA-Z0-9]/g, '');
         
         currentCall = peer.call(sanitizedPartnerId, localStream);
@@ -831,11 +836,10 @@
     function renderMessageBubble(msg) {
       const chatArea = document.getElementById('chatArea');
       
-      const matchedSenderField = msg.sender_uid || msg.sender_id || '';
-      const computedSenderUid = (matchedSenderField === MY_UID) ? MY_UID : HER_UID;
-      const isMe = computedSenderUid === currentUser.id;
+      const senderUid = msg.sender_uid || msg.sender_id;
+      const isMe = senderUid === currentUser.id;
       
-      const profile = cachedProfiles[computedSenderUid] || { name: isMe ? 'Me' : 'Babygirl 😺' };
+      const profile = cachedProfiles[senderUid] || { name: isMe ? 'Me' : 'Babygirl 😺' };
       
       const row = document.createElement('div');
       row.id = `msg-${msg.id}`;
@@ -877,7 +881,7 @@
       if(isMe) {
         row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text')));
       }
-      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(computedSenderUid));
+      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(senderUid));
 
       chatArea.appendChild(row);
       window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
@@ -947,24 +951,34 @@
       if(!txt) return; input.value = '';
 
       if(isEditingMsgId) {
-        await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
+        const { error } = await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
+        if (error) { alert("Failed to update message: " + error.message); return; }
         isEditingMsgId = null; document.getElementById('sendBtn').textContent = "Send"; fetchChatHistory(); return;
       }
 
       let replyData = replyingToMsgId ? document.getElementById('replyHudText').textContent : null;
       cancelMessageReply();
 
-      await supabaseClient.from('messages').insert([{ 
+      // Write utilizing secure real logged-in ID values to satisfy all Supabase RLS criteria:
+      const { error } = await supabaseClient.from('messages').insert([{ 
         sender_uid: currentUser.id, 
         sender_id: currentUser.id, 
         text: txt, 
         is_read: false, 
         reply_to_text: replyData 
       }]);
+
+      if (error) {
+        alert("Database Write Blocked: " + error.message);
+      }
       fetchChatHistory();
     }
 
-    async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
+    async function markAllAsRead() { 
+      if(currentUser) {
+        await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); 
+      }
+    }
 
     async function handleChatUpload(inputElement) {
       const file = inputElement.files[0]; if (!file) return;
@@ -972,13 +986,15 @@
       await supabaseClient.storage.from('media').upload(uniqueName, file);
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-      await supabaseClient.from('messages').insert([{ 
+      
+      const { error } = await supabaseClient.from('messages').insert([{ 
         sender_uid: currentUser.id, 
         sender_id: currentUser.id, 
         media_url: urlData.publicUrl, 
         media_type: mediaType, 
         is_read: false 
       }]);
+      if (error) alert("Media insert failed: " + error.message);
       fetchChatHistory();
     }
 
@@ -1005,13 +1021,14 @@
           const uniqueName = `${Date.now()}-voice.webm`;
           await supabaseClient.storage.from('media').upload(uniqueName, new File([audioBlob], "voice.webm"));
           const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-          await supabaseClient.from('messages').insert([{ 
+          const { error } = await supabaseClient.from('messages').insert([{ 
             sender_uid: currentUser.id, 
             sender_id: currentUser.id, 
             media_url: data.publicUrl, 
             media_type: 'audio', 
             is_read: false 
           }]);
+          if(error) alert("Audio insert failed: " + error.message);
           fetchChatHistory();
         };
         mediaRecorder.stop(); isRecording = false;
@@ -1030,7 +1047,7 @@
       broadcastChannel
         .on('presence', { event: 'sync' }, () => {
           const state = broadcastChannel.presenceState();
-          const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
+          const partnerId = getPartnerId();
           const dot = document.getElementById('presenceIndicator');
           const whoLine = document.getElementById('whoLine');
 
@@ -1043,10 +1060,8 @@
             whoLine.innerHTML = localLeft ? `Last seen ${localLeft}` : `Offline`;
           }
         })
-        .on('presence', { event: 'join' }, ({ key, currentPresences }) => {
-        })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-          const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
+          const partnerId = getPartnerId();
           if (key === partnerId) {
             const formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             localStorage.setItem(`last_seen_${partnerId}`, formattedTime);
@@ -1117,9 +1132,8 @@
       if (data) {
         const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
         data.forEach(post => {
-          const matchedAuthorField = post.sender_uid || post.sender_id || '';
-          const computedAuthorUid = (matchedAuthorField === MY_UID) ? MY_UID : HER_UID;
-          const profile = cachedProfiles[computedAuthorUid] || { name: computedAuthorUid === MY_UID ? 'Me' : 'Babygirl 😺' };
+          const authorUid = post.sender_uid || post.sender_id;
+          const profile = cachedProfiles[authorUid] || { name: authorUid === currentUser.id ? 'Me' : 'Babygirl 😺' };
           
           const card = document.createElement('div'); card.className = 'post-card';
           let reactionList = post.reactions || [];
@@ -1158,13 +1172,14 @@
         const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
         mediaUrl = data.publicUrl;
       }
-      await supabaseClient.from('posts').insert([{ 
+      const { error } = await supabaseClient.from('posts').insert([{ 
         sender_uid: currentUser.id, 
         sender_id: currentUser.id, 
         text: text, 
         media_url: mediaUrl, 
         reactions: [] 
       }]);
+      if (error) alert("Post failed: " + error.message);
       textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo"; fetchTimelinePosts();
     }
   </script>
