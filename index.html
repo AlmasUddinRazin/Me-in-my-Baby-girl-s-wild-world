@@ -388,8 +388,8 @@
       <div class="field">
         <label>Profile Picture</label>
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
-          <img id="avatarPreviewBox" src="" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); display:none;" />
-          <span style="font-size:0.8rem; color:var(--muted);">Select picture from your phone</span>
+          <img id="avatarPreviewBox" src="" style="width:65px; height:65px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); background: #241C3A;" onerror="window.handleAvatarError(this, 'Me')" />
+          <span style="font-size:0.8rem; color:var(--muted);">Your photo uploaded from this system</span>
         </div>
         <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
         <button class="btn ghost text-center" id="avatarFileBtn">🖼️ Choose Photo from Gallery</button>
@@ -431,7 +431,6 @@
     const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
     
-    // HARDCODED UIDS - NO SCRIPT MIXUPS
     const MY_UID = "8cc7c466-e340-4be2-aaf6-51e697b656cd";
     const HER_UID = "edfbab5f-bf54-49db-b5e3-a73c1af0486f";
 
@@ -531,7 +530,6 @@
       if (!user) return;
       currentUser = user;
       
-      // Map user email session to correct hardcoded UID
       let assignedUid = MY_UID;
       if (user.id === HER_UID || user.email.toLowerCase().includes("babygirl")) {
         assignedUid = HER_UID;
@@ -586,9 +584,8 @@
       const previewBox = document.getElementById('avatarPreviewBox');
       if (uploadedAvatarUrl) {
         previewBox.src = uploadedAvatarUrl;
-        previewBox.style.display = 'block';
       } else {
-        previewBox.style.display = 'none';
+        window.handleAvatarError(previewBox, myProfile.name || 'Me');
       }
       document.getElementById('profileModal').classList.add('active');
     }
@@ -609,7 +606,6 @@
       uploadedAvatarUrl = urlData.publicUrl;
 
       document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
-      document.getElementById('avatarPreviewBox').style.display = 'block';
       document.getElementById('avatarFileBtn').textContent = "✅ Upload Complete!";
     }
 
@@ -626,6 +622,7 @@
       
       cachedProfiles[currentUser.id] = { ...cachedProfiles[currentUser.id], ...updateData };
       closeProfileModal();
+      
       document.getElementById('myAvatarDisplay').src = uploadedAvatarUrl;
       await refreshAllProfilesData();
     }
@@ -648,9 +645,13 @@
     }
 
     function inspectPartnerProfile(partnerId) {
-      const profile = cachedProfiles[partnerId] || { name: 'Partner' };
-      document.getElementById('inspectAvatar').src = profile.avatar_url || '';
-      window.handleAvatarError(document.getElementById('inspectAvatar'), profile.name);
+      const targetUid = (partnerId === MY_UID) ? MY_UID : HER_UID;
+      const profile = cachedProfiles[targetUid] || { name: 'Partner' };
+      
+      const inspectBox = document.getElementById('inspectAvatar');
+      inspectBox.src = profile.avatar_url || '';
+      window.handleAvatarError(inspectBox, profile.name);
+      
       document.getElementById('inspectName').textContent = profile.name;
       
       let formattedDob = "Not Specified";
@@ -670,9 +671,11 @@
         document.getElementById('panelChat').classList.add('active');
         document.getElementById('tabChatBtn').classList.add('active');
         markAllAsRead();
+        fetchChatHistory();
       } else {
         document.getElementById('panelTimeline').classList.add('active');
         document.getElementById('tabTimelineBtn').classList.add('active');
+        fetchTimelinePosts();
       }
     }
 
@@ -685,8 +688,9 @@
         });
       }
       const myProfile = cachedProfiles[currentUser.id] || {};
-      document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || '';
-      window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
+      const barAvatar = document.getElementById('myAvatarDisplay');
+      barAvatar.src = myProfile.avatar_url || '';
+      window.handleAvatarError(barAvatar, myProfile.name);
     }
 
     async function initializePortal(myProfile) {
@@ -814,8 +818,9 @@
     function renderMessageBubble(msg) {
       const chatArea = document.getElementById('chatArea');
       
-      // Enforce clean layout bindings using strict UIDs
-      const computedSenderUid = (msg.sender_uid === MY_UID || msg.sender_id === MY_UID) ? MY_UID : HER_UID;
+      // FIX BOTH COLUMN OVERLAYS: Checks both variant styles sent from old/new tables
+      const matchedSenderField = msg.sender_uid || msg.sender_id || '';
+      const computedSenderUid = (matchedSenderField === MY_UID) ? MY_UID : HER_UID;
       const isMe = computedSenderUid === currentUser.id;
       
       const profile = cachedProfiles[computedSenderUid] || { name: isMe ? 'Me' : 'Babygirl 😺' };
@@ -989,7 +994,6 @@
       localStorage.setItem('my-mood', mood);
     }
 
-    // FIXED PRESENCE CONFIGURATION - CORRECT CALLBACK HOOK ORDER
     async function setupPresenceAndBroadcasts(username) {
       broadcastChannel = supabaseClient.channel('room-communications');
       
@@ -1010,7 +1014,6 @@
           }
         })
         .on('presence', { event: 'join' }, ({ key, currentPresences }) => {
-          // Join hook
         })
         .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
           const partnerId = (currentUser.id === MY_UID) ? HER_UID : MY_UID;
@@ -1084,7 +1087,8 @@
       if (data) {
         const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
         data.forEach(post => {
-          const computedAuthorUid = (post.sender_uid === MY_UID || post.sender_id === MY_UID) ? MY_UID : HER_UID;
+          const matchedAuthorField = post.sender_uid || post.sender_id || '';
+          const computedAuthorUid = (matchedAuthorField === MY_UID) ? MY_UID : HER_UID;
           const profile = cachedProfiles[computedAuthorUid] || { name: computedAuthorUid === MY_UID ? 'Me' : 'Babygirl 😺' };
           
           const card = document.createElement('div'); card.className = 'post-card';
