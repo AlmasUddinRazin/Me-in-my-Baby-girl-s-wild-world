@@ -6,7 +6,7 @@
   <title>👅 Our Wild World</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght=0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   
   <style>
@@ -119,9 +119,9 @@
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
     .msg img { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
     
-    .msg-actions { opacity: 0; position: absolute; top: -20px; right: 10px; display: flex; gap: 4px; background: var(--card-2); padding: 2px 6px; border-radius: 8px; border: 1px solid var(--border); transition: opacity 0.2s; z-index: 10; }
+    .msg-actions { opacity: 0; position: absolute; top: -24px; right: 10px; display: flex; gap: 6px; background: var(--card-2); padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); transition: opacity 0.2s; z-index: 10; }
     .msg:hover .msg-actions { opacity: 1; }
-    .msg-action-btn { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 0.7rem; }
+    .msg-reply-act-btn, .msg-edit-act-btn, .msg-react-act-btn { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 0.75rem; font-weight: 500; }
     
     .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
     .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
@@ -144,7 +144,7 @@
     .profile-setup-card { background: var(--card-2); border: 1px solid var(--gold); border-radius: var(--radius); width: 100%; max-width: 480px; padding: 28px; max-height: 90vh; overflow-y: auto; }
     
     .profile-details-grid { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: start; }
-    .profile-details-left img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid var(--gold); }
+    .profile-details-left img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid var(--gold); background: #1a1528; }
 
     .sidebar-section { padding: 14px; border-bottom: 1px solid var(--border); }
     .sidebar-title { font-size: 1rem; color: var(--gold); margin-bottom: 8px; font-weight: 600; display: flex; justify-content: space-between; }
@@ -418,9 +418,6 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6Mj99NTg0NDJ9.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8"; // Shortened dummy fallback or exact working key
-
-    // Direct initialization with the verified active anon key you supplied
     const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
     const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
     
@@ -443,7 +440,6 @@
     let activeCameraFacing = "user";
     let callInterval = null;
     let callSeconds = 0;
-    
     let detectedProfileIdKey = 'id';
 
     document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
@@ -519,18 +515,13 @@
     async function checkSessionState(user) {
       if (!user) return;
       currentUser = user;
-
       let profile = null;
       let primaryKeysToTry = ['id', 'uid', 'user_id'];
       
       for(let key of primaryKeysToTry) {
         try {
           const { data, error } = await supabaseClient.from('profiles').select('*').eq(key, user.id).maybeSingle();
-          if(!error && data) {
-            detectedProfileIdKey = key;
-            profile = data;
-            break;
-          }
+          if(!error && data) { detectedProfileIdKey = key; profile = data; break; }
         } catch(e){}
       }
 
@@ -538,9 +529,7 @@
         const { data } = await supabaseClient.from('profiles').select('*').limit(5);
         if(data && data.length > 0) {
           profile = data.find(p => p.id === user.id || p.uid === user.id || p.user_id === user.id);
-          if(profile) {
-            detectedProfileIdKey = profile.id ? 'id' : (profile.uid ? 'uid' : 'user_id');
-          }
+          if(profile) detectedProfileIdKey = profile.id ? 'id' : (profile.uid ? 'uid' : 'user_id');
         }
       }
 
@@ -578,7 +567,6 @@
       } else {
         previewBox.style.display = 'none';
       }
-      
       uploadedAvatarUrl = myProfile.avatar_url || null;
       document.getElementById('profileModal').classList.add('active');
     }
@@ -589,24 +577,18 @@
       const file = inputElement.files[0];
       if (!file) return;
 
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          canvas.width = 100;
-          canvas.height = 100;
-          ctx.drawImage(img, 0, 0, 100, 100);
-          
-          uploadedAvatarUrl = canvas.toDataURL('image/jpeg', 0.6);
-          document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
-          document.getElementById('avatarPreviewBox').style.display = 'block';
-          document.getElementById('avatarFileBtn').textContent = "✅ Prepared!";
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
+      const uniqueName = `avatar-${currentUser.id}-${Date.now()}.jpg`;
+      document.getElementById('avatarFileBtn').textContent = "⌛ Uploading to Cloud...";
+
+      const { error: uploadError } = await supabaseClient.storage.from('media').upload(uniqueName, file, { cacheControl: '3600', upsert: true });
+      if (uploadError) { alert("Upload fail: " + uploadError.message); return; }
+
+      const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+      uploadedAvatarUrl = urlData.publicUrl;
+
+      document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
+      document.getElementById('avatarPreviewBox').style.display = 'block';
+      document.getElementById('avatarFileBtn').textContent = "✅ Upload Complete!";
     }
 
     async function saveProfileChanges() {
@@ -615,22 +597,16 @@
       const nasty = document.getElementById('editProfileNasty').value;
       if(!updatedName) return alert("Nickname field required");
       
-      const updateData = {
-        name: updatedName,
-        dob: dob,
-        nasty_details: nasty,
-        avatar_url: uploadedAvatarUrl
-      };
-      
+      const updateData = { name: updatedName, dob: dob, nasty_details: nasty, avatar_url: uploadedAvatarUrl };
       const { error } = await supabaseClient.from('profiles').update(updateData).eq(detectedProfileIdKey, currentUser.id);
-      if(error) { 
-        alert("Error saving: " + error.message); 
-        return; 
-      }
       
+      if(error) { alert("Error saving fields: " + error.message); return; }
+      
+      cachedProfiles[currentUser.id] = { ...cachedProfiles[currentUser.id], ...updateData };
       closeProfileModal();
       document.getElementById('myAvatarDisplay').src = uploadedAvatarUrl;
       document.getElementById('whoLine').textContent = `Logged in: ${updatedName}`;
+      fetchChatHistory();
     }
 
     function applyPortalTheme(themeClass) {
@@ -659,9 +635,7 @@
       let formattedDob = "Not Specified";
       if (profile.dob) {
         const parsedDate = new Date(profile.dob);
-        if (!isNaN(parsedDate)) {
-          formattedDob = parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-        }
+        if (!isNaN(parsedDate)) formattedDob = parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
       }
       document.getElementById('inspectDob').textContent = formattedDob;
       document.getElementById('inspectNasty').textContent = profile.nasty_details || "No dirty details declared yet...";
@@ -682,18 +656,9 @@
     }
 
     async function initializePortal(myProfile) {
-      const savedTheme = localStorage.getItem('user-theme') || 'midnight';
-      applyPortalTheme(savedTheme);
-      document.getElementById('themeSelect').value = savedTheme;
-
-      const savedAccent = localStorage.getItem('user-accent');
-      if(savedAccent) {
-        applyAccentColor(savedAccent);
-        document.getElementById('accentColorPicker').value = savedAccent;
-      }
-
-      const savedRoomName = localStorage.getItem('custom-room-title');
-      if(savedRoomName) changeRoomName(savedRoomName);
+      applyPortalTheme(localStorage.getItem('user-theme') || 'midnight');
+      if(localStorage.getItem('user-accent')) applyAccentColor(localStorage.getItem('user-accent'));
+      if(localStorage.getItem('custom-room-title')) changeRoomName(localStorage.getItem('custom-room-title'));
 
       document.getElementById('whoLine').textContent = `Logged in: ${myProfile.name}`;
       document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || '';
@@ -708,14 +673,11 @@
         });
       }
 
-      const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
+      // Re-routed connection using the standard official cloud directory paths
+      const sanitizedPeerId = "wildworld-" + currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
       peer = new Peer(sanitizedPeerId, {
-        host: 'peerjs-production.up.railway.app', port: 443, path: '/', secure: true,
-        config: { iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]},
-        debug: 1
+        debug: 1,
+        config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] }
       });
 
       peer.on('call', (incomingCall) => {
@@ -732,8 +694,7 @@
     }
 
     function startCallTimer() {
-      callSeconds = 0;
-      clearInterval(callInterval);
+      callSeconds = 0; clearInterval(callInterval);
       callInterval = setInterval(() => {
         callSeconds++;
         const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
@@ -752,7 +713,7 @@
         
         const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
         if(!partnerId) return;
-        const sanitizedPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
+        const sanitizedPartnerId = "wildworld-" + partnerId.replace(/[^a-zA-Z0-9]/g, '');
         
         currentCall = peer.call(sanitizedPartnerId, localStream);
         startCallTimer();
@@ -762,15 +723,13 @@
           document.getElementById('remoteVideo').srcObject = rStream;
         });
       } catch (err) {
-        alert("Unable to fetch media tracks.");
-        hangupActiveCall();
+        alert("WebRTC Line Error."); hangupActiveCall();
       }
     }
 
     async function acceptIncomingCall() {
       document.getElementById('incomingBanner').classList.remove('active');
       document.getElementById('callOverlay').classList.add('active');
-      document.getElementById('callStatusMessage').textContent = "Connecting Secure Stream...";
       
       try {
         localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
@@ -783,22 +742,17 @@
           document.getElementById('remoteVideo').srcObject = rStream;
         });
       } catch(err) {
-        alert("Failed to access camera/mic line.");
         hangupActiveCall();
       }
     }
 
     async function switchVideoCamera() {
       if(!localStream) return;
-      const videoTrack = localStream.getVideoTracks()[0];
-      if(!videoTrack) return;
-      
+      const videoTrack = localStream.getVideoTracks()[0]; if(!videoTrack) return;
       activeCameraFacing = (activeCameraFacing === "user") ? "environment" : "user";
       videoTrack.stop();
-      
       const newVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: activeCameraFacing } });
-      const newTrack = newVideo.getVideoTracks()[0];
-      localStream.addTrack(newTrack);
+      localStream.addTrack(newVideo.getVideoTracks()[0]);
       document.getElementById('localVideo').srcObject = localStream;
     }
 
@@ -810,46 +764,33 @@
           const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
           if(sender) sender.replaceTrack(videoTrack);
         } else {
-          screenStream.getTracks().forEach(t => t.stop());
-          screenStream = null;
-          reconnectActiveCall();
+          screenStream.getTracks().forEach(t => t.stop()); screenStream = null; reconnectActiveCall();
         }
       } catch(err) {}
     }
 
-    function reconnectActiveCall() {
-      hangupActiveCall();
-      makePeerCall(true);
-    }
-
+    function reconnectActiveCall() { hangupActiveCall(); makePeerCall(true); }
     function rejectIncomingCall() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); }
     
     function hangupActiveCall() {
-      document.getElementById('callOverlay').classList.remove('active');
-      clearInterval(callInterval);
+      document.getElementById('callOverlay').classList.remove('active'); clearInterval(callInterval);
       if(currentCall) currentCall.close();
       if(localStream) localStream.getTracks().forEach(t=>t.stop());
       if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
     }
 
     async function fetchChatHistory() {
-      try {
-        let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-        if (response.data) {
-          const chatArea = document.getElementById('chatArea');
-          chatArea.innerHTML = '';
-          response.data.forEach(msg => renderMessageBubble(msg));
-          chatArea.scrollTop = chatArea.scrollHeight;
-        }
-      } catch (err) {}
+      let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+      if (response.data) {
+        const chatArea = document.getElementById('chatArea'); chatArea.innerHTML = '';
+        response.data.forEach(msg => renderMessageBubble(msg));
+        chatArea.scrollTop = chatArea.scrollHeight;
+      }
     }
 
     function renderMessageBubble(msg) {
       if(document.getElementById(`msg-${msg.id}`)) {
-        const textDiv = document.getElementById(`text-node-${msg.id}`);
-        if (textDiv && msg.text) textDiv.innerHTML = `<div>${msg.text}</div>`;
-        updateReactionUi(msg.id, msg.reactions);
-        return;
+        updateReactionUi(msg.id, msg.reactions); return;
       }
       const chatArea = document.getElementById('chatArea');
       const isMe = msg.sender_uid === currentUser.id;
@@ -868,41 +809,33 @@
 
       let replyMarkup = msg.reply_to_text ? `<div style="font-size:0.75rem; background:rgba(0,0,0,0.1); border-left:2px solid var(--gold); padding:4px; margin-bottom:4px;">${msg.reply_to_text}</div>` : '';
       let tickMarkup = isMe ? `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);'}">${msg.is_read ? '✓✓' : '✓'}</span>` : '';
-
       const avatarSrc = profile.avatar_url || '';
 
       row.innerHTML = `
         <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" />
         <div class="msg-content-block">
           <span class="sender-label">${profile.name}</span>
-          <div class="msg" style="position: relative; cursor: pointer;">
-            <div class="msg-actions">
-              <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media Message'}">Reply</button>
+          <div class="msg">
+            <div class="msg-actions" style="opacity: 1; display:flex;">
+              <button class="msg-react-act-btn" data-id="${msg.id}">❤️ React</button>
+              <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media'}">Reply</button>
               ${isMe ? `<button class="msg-edit-act-btn" data-id="${msg.id}" data-text="${msg.text || ''}">Edit</button>` : ''}
             </div>
             ${replyMarkup}
             <div id="text-node-${msg.id}">${msg.text ? `<div>${msg.text}</div>` : ''}</div>
             ${mediaMarkup}
-            
             <div class="reaction-container" id="react-holder-${msg.id}" style="display:flex; gap:4px; margin-top:4px; font-size:0.8rem;"></div>
-
-            <div class="msg-meta-line">
-              ${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-              ${tickMarkup}
-            </div>
+            <div class="msg-meta-line">${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} ${tickMarkup}</div>
           </div>
         </div>
       `;
 
       row.querySelector('.msg').addEventListener('dblclick', () => handleReactionToggle(msg.id));
-
-      row.querySelector('.msg-reply-act-btn').addEventListener('click', (e) => {
-        setMessageReply(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
-      });
+      row.querySelector('.msg-react-act-btn').addEventListener('click', () => handleReactionToggle(msg.id));
+      row.querySelector('.msg-reply-act-btn').addEventListener('click', (e) => setMessageReply(e.target.getAttribute('data-id'), e.target.getAttribute('data-text')));
+      
       if(isMe) {
-        row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => {
-          editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
-        });
+        row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text')));
       }
       row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(msg.sender_uid));
 
@@ -918,19 +851,16 @@
       let reactions = data?.reactions || [];
       
       const existingIndex = reactions.findIndex(r => r.uid === currentUser.id);
-      if (existingIndex > -1) {
-        reactions.splice(existingIndex, 1);
-      } else {
-        reactions.push({ uid: currentUser.id, emoji: chosenEmoji });
-      }
+      if (existingIndex > -1) reactions.splice(existingIndex, 1);
+      else reactions.push({ uid: currentUser.id, emoji: chosenEmoji });
 
       await supabaseClient.from('messages').update({ reactions }).eq('id', msgId);
+      fetchChatHistory();
     }
 
     function updateReactionUi(msgId, reactions) {
       const holder = document.getElementById(`react-holder-${msgId}`);
-      if (!holder) return;
-      holder.innerHTML = '';
+      if (!holder) return; holder.innerHTML = '';
       if (!reactions || reactions.length === 0) return;
 
       const counts = {};
@@ -938,7 +868,7 @@
 
       Object.entries(counts).forEach(([emoji, count]) => {
         const badge = document.createElement('span');
-        badge.style.cssText = "background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border);";
+        badge.style.cssText = "background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; cursor: pointer;";
         badge.textContent = `${emoji} ${count > 1 ? count : ''}`;
         badge.addEventListener('click', (e) => { e.stopPropagation(); handleReactionToggle(msgId); });
         holder.appendChild(badge);
@@ -947,76 +877,52 @@
 
     function setMessageReply(id, partialText) {
       replyingToMsgId = id;
-      const hud = document.getElementById('replyHud');
       document.getElementById('replyHudText').textContent = `Replying to: "${partialText}"`;
-      hud.classList.add('active');
+      document.getElementById('replyHud').classList.add('active');
     }
 
-    function cancelMessageReply() {
-      replyingToMsgId = null;
-      document.getElementById('replyHud').classList.remove('active');
-    }
+    function cancelMessageReply() { replyingToMsgId = null; document.getElementById('replyHud').classList.remove('active'); }
 
     function editYourMessage(id, oldText) {
-      isEditingMsgId = id;
-      document.getElementById('chatInput').value = oldText;
-      document.getElementById('sendBtn').textContent = "Update";
+      isEditingMsgId = id; document.getElementById('chatInput').value = oldText; document.getElementById('sendBtn').textContent = "Update";
     }
 
     async function sendTextMessage() {
-      const input = document.getElementById('chatInput');
-      const txt = input.value.trim();
-      if(!txt) return;
-      input.value = '';
+      const input = document.getElementById('chatInput'); const txt = input.value.trim();
+      if(!txt) return; input.value = '';
 
       if(isEditingMsgId) {
         await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
-        const txtNode = document.getElementById(`text-node-${isEditingMsgId}`);
-        if(txtNode) txtNode.innerHTML = `<div>${txt}</div>`;
-        isEditingMsgId = null;
-        document.getElementById('sendBtn').textContent = "Send";
-        return;
+        isEditingMsgId = null; document.getElementById('sendBtn').textContent = "Send"; fetchChatHistory(); return;
       }
 
-      let replyData = null;
-      if(replyingToMsgId) {
-        replyData = document.getElementById('replyHudText').textContent;
-        cancelMessageReply();
-      }
+      let replyData = replyingToMsgId ? document.getElementById('replyHudText').textContent : null;
+      cancelMessageReply();
 
-      const basePayload = { 
-        sender_uid: currentUser.id, 
-        text: txt, 
-        is_read: false,
-        reply_to_text: replyData
-      };
-
-      await supabaseClient.from('messages').insert([basePayload]);
+      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt, is_read: false, reply_to_text: replyData }]);
+      fetchChatHistory();
     }
 
-    async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
     async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
 
     async function handleChatUpload(inputElement) {
       const file = inputElement.files[0]; if (!file) return;
       const uniqueName = `${Date.now()}-${file.name}`;
-      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
-      if (error) return;
+      await supabaseClient.storage.from('media').upload(uniqueName, file);
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
+      fetchChatHistory();
     }
 
     function toggleVoiceRecording() {
       if (!isRecording) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
+          mediaRecorder = new MediaRecorder(stream); audioChunks = [];
           mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-          mediaRecorder.start();
-          isRecording = true;
+          mediaRecorder.start(); isRecording = true;
           document.getElementById('voiceRecordOverlay').classList.add('active');
-        }).catch(err => alert("Microphone hardware access denied."));
+        }).catch(() => alert("Mic Denied"));
       }
     }
 
@@ -1029,48 +935,36 @@
       if(mediaRecorder) {
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const file = new File([audioBlob], "voice.webm");
           const uniqueName = `${Date.now()}-voice.webm`;
-          await supabaseClient.storage.from('media').upload(uniqueName, file);
+          await supabaseClient.storage.from('media').upload(uniqueName, new File([audioBlob], "voice.webm"));
           const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
           await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
+          fetchChatHistory();
         };
-        mediaRecorder.stop();
-        isRecording = false;
+        mediaRecorder.stop(); isRecording = false;
       }
       document.getElementById('voiceRecordOverlay').classList.remove('active');
     }
 
     async function updateMyMood(mood) {
-      if(broadcastChannel) {
-        broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
-      }
+      if(broadcastChannel) broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
       localStorage.setItem('my-mood', mood);
     }
 
     async function setupPresenceAndBroadcasts(username) {
-      try {
-        await supabaseClient.removeAllChannels();
-      } catch (err) {}
-
       broadcastChannel = supabaseClient.channel('room-communications');
-      
       broadcastChannel
         .on('presence', { event: 'sync' }, () => {
           const state = broadcastChannel.presenceState();
           const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
           const dot = document.getElementById('presenceIndicator');
-          if(partnerId && state[partnerId]) dot.classList.add('online');
-          else dot.classList.remove('online');
+          if(partnerId && state[partnerId]) dot.classList.add('online'); else dot.classList.remove('online');
         })
         .on('broadcast', { event: 'typing' }, payload => {
-          const indicator = document.getElementById('typingIndicatorField');
-          indicator.textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
+          document.getElementById('typingIndicatorField').textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
         })
         .on('broadcast', { event: 'mood' }, payload => {
-          if(payload.payload.uid !== currentUser.id) {
-            document.getElementById('partnerMoodDisplay').textContent = `Partner: ${payload.payload.mood}`;
-          }
+          if(payload.payload.uid !== currentUser.id) document.getElementById('partnerMoodDisplay').textContent = `Partner: ${payload.payload.mood}`;
         });
 
       broadcastChannel.subscribe(async (status) => {
@@ -1083,20 +977,9 @@
       });
 
       supabaseClient.channel('table-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => { 
-          fetchChatHistory(); 
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, payload => { 
-          loadBucketList(); 
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, payload => {
-          const updatedUser = payload.new;
-          const actualUid = updatedUser.id || updatedUser.uid || updatedUser.user_id;
-          if (actualUid) {
-            cachedProfiles[actualUid] = updatedUser;
-          }
-        })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchChatHistory())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, () => loadBucketList())
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, () => fetchTimelinePosts())
         .subscribe();
     }
 
@@ -1104,48 +987,31 @@
       if(!broadcastChannel) return;
       broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
       clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
-      }, 2000);
+      typingTimeout = setTimeout(() => broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } }), 2000);
     }
 
-    function saveAnniversary(val) {
-      localStorage.setItem('anniversary-date', val);
-      calculateAnniversary(val);
-    }
-
-    function loadAnniversary() {
-      const val = localStorage.getItem('anniversary-date') || "2024-01-01";
-      document.getElementById('editAnniversary').value = val;
-      calculateAnniversary(val);
-    }
-
+    function saveAnniversary(val) { localStorage.setItem('anniversary-date', val); calculateAnniversary(val); }
+    function loadAnniversary() { const val = localStorage.getItem('anniversary-date') || "2024-01-01"; document.getElementById('editAnniversary').value = val; calculateAnniversary(val); }
+    
     function calculateAnniversary(dateStr) {
-      const ann = new Date(dateStr);
-      const diff = Date.now() - ann.getTime();
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
       document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
     }
 
     async function addToBucketList() {
-      const item = prompt("Add a wild goal to our Bucket List:");
-      if(!item) return;
-      await supabaseClient.from('bucket_items').insert([{ text: item }]);
-      loadBucketList();
+      const item = prompt("Add a wild goal to our Bucket List:"); if(!item) return;
+      await supabaseClient.from('bucket_items').insert([{ text: item }]); loadBucketList();
     }
 
     async function loadBucketList() {
       const { data } = await supabaseClient.from('bucket_items').select('*').order('created_at', { ascending: true });
-      const container = document.getElementById('bucketListUi');
-      container.innerHTML = '';
+      const container = document.getElementById('bucketListUi'); container.innerHTML = '';
       if (data) {
         data.forEach(item => {
           const li = document.createElement('li');
           li.innerHTML = `<span>🔥 ${item.text}</span><span class="del-bucket-btn" data-id="${item.id}" style="color:var(--danger); cursor:pointer;">✕</span>`;
           li.querySelector('.del-bucket-btn').addEventListener('click', async (e) => {
-            const itemId = e.target.getAttribute('data-id');
-            await supabaseClient.from('bucket_items').delete().eq('id', itemId);
-            loadBucketList();
+            await supabaseClient.from('bucket_items').delete().eq('id', e.target.getAttribute('data-id')); loadBucketList();
           });
           container.appendChild(li);
         });
@@ -1159,14 +1025,10 @@
         data.forEach(post => {
           const profile = cachedProfiles[post.sender_uid] || { name: 'Partner' };
           const card = document.createElement('div'); card.className = 'post-card';
-          const avatarSrc = profile.avatar_url || '';
           card.innerHTML = `
             <div class="post-header">
-              <img src="${avatarSrc}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
-              <div>
-                <div class="post-author">${profile.name}</div>
-                <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
-              </div>
+              <img src="${profile.avatar_url || ''}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
+              <div><div class="post-author">${profile.name}</div><div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div></div>
             </div>
             <div class="post-body">${post.text || ''}</div>
             ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
@@ -1177,10 +1039,7 @@
       }
     }
 
-    function handlePostFileSelected(el) {
-      selectedPostFile = el.files[0];
-      if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ File Selected";
-    }
+    function handlePostFileSelected(el) { selectedPostFile = el.files[0]; if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ Photo Attached"; }
 
     async function submitTimelinePost() {
       const textInput = document.getElementById('postText'); const text = textInput.value.trim();
@@ -1193,7 +1052,7 @@
         mediaUrl = data.publicUrl;
       }
       await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
-      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
+      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo"; fetchTimelinePosts();
     }
   </script>
 </body>
