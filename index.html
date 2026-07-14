@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  
   <style>
     :root {
       --bg: #0F1220;
@@ -70,7 +71,6 @@
     #appScreen { align-items:stretch; padding:0; }
     .app-layout { display: flex; width: 100vw; height: 100vh; position: relative; }
     
-    /* Responsive Side Drawer with 3-bar access controls */
     .sidebar {
       width: 320px; background: var(--bg-deep); border-right: 1px solid var(--border);
       display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -117,7 +117,7 @@
     .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; position: relative; }
     .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
     .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
-    .msg img { max-width: 250px; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
+    .msg img { max-width: 100%; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
     
     .msg-actions { opacity: 0; position: absolute; top: -20px; right: 10px; display: flex; gap: 4px; background: var(--card-2); padding: 2px 6px; border-radius: 8px; border: 1px solid var(--border); transition: opacity 0.2s; z-index: 10; }
     .msg:hover .msg-actions { opacity: 1; }
@@ -172,6 +172,14 @@
     .incoming-banner.active { display:flex; }
     .timer-overlay { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; color: var(--gold); }
   </style>
+
+  <!-- CRITICAL BUGFIX: Defined instantly in a global script tag so HTML elements have access before modules execute -->
+  <script>
+    window.handleAvatarError = function(img, name) { 
+      img.onerror = null; // Prevent infinite fallback loops
+      img.src = "https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=" + encodeURIComponent(name || 'U'); 
+    };
+  </script>
 </head>
 <body>
   <div id="authScreen" class="screen active">
@@ -182,18 +190,18 @@
         <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
         <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
         <div class="err" id="authErr"></div>
-        <button class="btn gold" onclick="handleAuthentication()">Enter Space</button>
+        <button class="btn gold" id="loginSubmitBtn">Enter Space</button>
         <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
-          Need access? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(true)">Request Registration</a>
+          Need access? <a href="#" style="color:var(--gold);" id="toRegisterLink">Request Registration</a>
         </p>
       </div>
       <div id="registerForm" style="display:none;">
         <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
         <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
         <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
-        <button class="btn" onclick="handleRegistration()">Submit Application</button>
+        <button class="btn" id="registerSubmitBtn">Submit Application</button>
         <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
-          Already registered? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(false)">Sign In</a>
+          Already registered? <a href="#" style="color:var(--gold);" id="toLoginLink">Sign In</a>
         </p>
       </div>
     </div>
@@ -203,7 +211,7 @@
     <div class="auth-card">
       <h1>Awaiting Access Keys</h1>
       <p style="color:var(--muted); line-height:1.5;">Your entry profile must be approved by the supervisor.</p>
-      <button class="btn ghost" style="margin-top:20px;" onclick="signOutSession()">Disconnect Session</button>
+      <button class="btn ghost" style="margin-top:20px;" id="pendingDisconnectBtn">Disconnect Session</button>
     </div>
   </div>
 
@@ -217,7 +225,7 @@
         <div class="sidebar-section">
           <div class="sidebar-title"><span>😈 Current Mood</span></div>
           <div class="field" style="margin: 0;">
-            <select id="myMoodSelect" onchange="updateMyMood(this.value)">
+            <select id="myMoodSelect">
               <option value="Normal">Normal</option>
               <option value="Shy to say">Shy to say</option>
               <option value="Fucking Horny">Fucking Horny</option>
@@ -230,7 +238,7 @@
           <div id="partnerMoodDisplay" style="font-size:0.8rem; margin-top:8px; color:var(--rose);">Partner is setting mood...</div>
         </div>
         <div class="sidebar-section">
-          <div class="sidebar-title"><span>📝 Bucket List</span> <button onclick="addToBucketList()" style="background:none; border:none; color:var(--gold); cursor:pointer;">+</button></div>
+          <div class="sidebar-title"><span>📝 Bucket List</span> <button id="addBucketBtn" style="background:none; border:none; color:var(--gold); cursor:pointer;">+</button></div>
           <ul class="couple-list" id="bucketListUi"></ul>
         </div>
         <div class="sidebar-section">
@@ -238,7 +246,7 @@
           <div class="field" style="margin-bottom: 6px;">
             <input type="text" id="sharedYoutubeUrl" placeholder="Enter Youtube URL" style="padding:6px; font-size:0.8rem;" />
           </div>
-          <button class="btn gold small" onclick="setWatchRoomUrl()" style="width:100%;">Stream Video</button>
+          <button class="btn gold small" id="streamVideoBtn" style="width:100%;">Stream Video</button>
           <div id="watchContainer" style="margin-top:8px;"></div>
         </div>
       </aside>
@@ -246,8 +254,8 @@
       <div class="app-wrap">
         <div class="topbar">
           <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="icon-btn" title="Toggle Sidebar Menu" onclick="toggleMainSidebar()" style="border-radius:8px; font-size:1.2rem; background:transparent;">☰</button>
-            <div class="profile-meta-block" onclick="openMySettings()">
+            <button class="icon-btn" title="Toggle Sidebar Menu" id="sidebarToggleBtn" style="border-radius:8px; font-size:1.2rem; background:transparent;">☰</button>
+            <div class="profile-meta-block" id="topProfileBlock">
               <div class="avatar-container">
                 <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="window.handleAvatarError(this, 'Us')" />
                 <div id="presenceIndicator" class="status-dot"></div>
@@ -259,15 +267,15 @@
             </div>
           </div>
           <div class="top-actions">
-            <button class="icon-btn" title="Voice Call" onclick="makePeerCall(false)">📞</button>
-            <button class="icon-btn" title="Video Call" onclick="makePeerCall(true)">🎥</button>
-            <button class="icon-btn" title="Logout" onclick="signOutSession()">⏻</button>
+            <button class="icon-btn" title="Voice Call" id="voiceCallBtn">📞</button>
+            <button class="icon-btn" title="Video Call" id="videoCallBtn">🎥</button>
+            <button class="icon-btn" title="Logout" id="logoutBtn">⏻</button>
           </div>
         </div>
 
         <div class="nav-tabs">
-          <div class="nav-tab active" id="tabChatBtn" onclick="switchTab('chat')">👅 Our Wild World</div>
-          <div class="nav-tab" id="tabTimelineBtn" onclick="switchTab('timeline')">💋 U & Me</div>
+          <div class="nav-tab active" id="tabChatBtn">👅 Our Wild World</div>
+          <div class="nav-tab" id="tabTimelineBtn">💋 U & Me</div>
         </div>
 
         <div id="panelChat" class="content-panel active">
@@ -276,24 +284,24 @@
           
           <div class="reply-hud" id="replyHud">
             <span id="replyHudText" style="font-size:0.8rem; color:var(--muted);">Replying to...</span>
-            <button onclick="cancelMessageReply()" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
+            <button id="cancelReplyBtn" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
           </div>
 
           <div class="composer-wrapper">
             <div class="voice-record-overlay" id="voiceRecordOverlay">
               <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
               <div style="display:flex; gap:10px;">
-                <button class="btn small danger" onclick="cancelVoiceRecording()">✕ Cancel</button>
-                <button class="btn small gold" style="background:#4fa885;" onclick="stopAndSendVoice()">⏹️ Send</button>
+                <button class="btn small danger" id="cancelVoiceBtn">✕ Cancel</button>
+                <button class="btn small gold" style="background:#4fa885;" id="sendVoiceBtn">⏹️ Send</button>
               </div>
             </div>
 
             <div class="composer">
-              <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleChatUpload(this)" />
-              <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
-              <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
-              <textarea id="chatInput" placeholder="Type a message..." rows="1" oninput="broadcastTypingStatus()"></textarea>
-              <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" id="sendBtn" onclick="sendTextMessage()">Send</button>
+              <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" />
+              <button class="icon-btn" id="attachFileBtn">📎</button>
+              <button class="icon-btn" id="voiceRecBtn">🎙></button>
+              <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
+              <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" id="sendBtn">Send</button>
             </div>
           </div>
         </div>
@@ -303,9 +311,9 @@
             <div class="timeline-composer">
               <textarea id="postText" placeholder="Share something with your favorite person..." rows="3"></textarea>
               <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <input type="file" id="postFileInput" accept="image/*" style="display:none;" onchange="handlePostFileSelected(this)" />
-                <button class="btn ghost small" id="postFileBtn" onclick="document.getElementById('postFileInput').click()">📸 Add Photo</button>
-                <button class="btn gold small" onclick="submitTimelinePost()">Publish</button>
+                <input type="file" id="postFileInput" accept="image/*" style="display:none;" />
+                <button class="btn ghost small" id="postFileBtn">📸 Add Photo</button>
+                <button class="btn gold small" id="submitPostBtn">Publish</button>
               </div>
             </div>
             <div id="timelineFeed"></div>
@@ -329,7 +337,7 @@
           <p id="inspectNasty" style="font-style:italic; color:var(--muted);">No secrets unlocked yet...</p>
         </div>
       </div>
-      <button class="btn ghost" style="margin-top:20px;" onclick="document.getElementById('profileInspectModal').classList.remove('active')">Close</button>
+      <button class="btn ghost" style="margin-top:20px;" id="closeInspectBtn">Close</button>
     </div>
   </div>
 
@@ -354,12 +362,12 @@
 
       <div class="field">
         <label>Anniversary / Meet Date</label>
-        <input type="date" id="editAnniversary" onchange="saveAnniversary(this.value)" />
+        <input type="date" id="editAnniversary" />
       </div>
 
       <div class="field">
         <label>Theme Preset</label>
-        <select id="themeSelect" onchange="applyPortalTheme(this.value)">
+        <select id="themeSelect">
           <option value="midnight">Deep Midnight</option>
           <option value="crimson">Crimson Rose</option>
           <option value="gold">Forbidden Gold</option>
@@ -368,32 +376,32 @@
 
       <div class="field">
         <label>Accent Color Picker</label>
-        <input type="color" id="accentColorPicker" onchange="applyAccentColor(this.value)" />
+        <input type="color" id="accentColorPicker" />
       </div>
 
       <div class="field">
         <label>Custom Chat Room Name</label>
-        <input type="text" id="customRoomNameInput" placeholder="Change Room Name" onchange="changeRoomName(this.value)" />
+        <input type="text" id="customRoomNameInput" placeholder="Change Room Name" />
       </div>
 
       <div class="field">
         <label>Profile Picture</label>
-        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(this)" />
-        <button class="btn ghost text-center" id="avatarFileBtn" onclick="document.getElementById('avatarFileInput').click()">🖼️ Choose Photo from Gallery</button>
+        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
+        <button class="btn ghost text-center" id="avatarFileBtn">🖼️ Choose Photo from Gallery</button>
         <div id="avatarUploadStatus" style="font-size:0.75rem; color:var(--success); margin-top:4px;"></div>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 26px;">
-        <button class="btn ghost" onclick="closeProfileModal()">Cancel</button>
-        <button class="btn gold" onclick="saveProfileChanges()">Update Portal Info</button>
+        <button class="btn ghost" id="cancelProfileBtn">Cancel</button>
+        <button class="btn gold" id="saveProfileBtn">Update Portal Info</button>
       </div>
     </div>
   </div>
 
   <div class="incoming-banner" id="incomingBanner">
     <span style="color:var(--gold); font-weight:600;" id="incomingCallLabel">Incoming Call...</span>
-    <button class="btn small gold" onclick="acceptIncomingCall()">Answer</button>
-    <button class="btn small danger" onclick="rejectIncomingCall()">Decline</button>
+    <button class="btn small gold" id="acceptCallBtn">Answer</button>
+    <button class="btn small danger" id="declineCallBtn">Decline</button>
   </div>
 
   <div id="callOverlay">
@@ -404,10 +412,10 @@
       <video id="localVideo" autoplay playsinline muted></video>
     </div>
     <div class="call-controls">
-      <button class="icon-btn" style="background:#555;" title="Switch Camera" onclick="switchVideoCamera()">🔄</button>
-      <button class="icon-btn" style="background:#444;" title="Screen Share" onclick="toggleScreenSharing()">🖥️</button>
-      <button class="icon-btn" style="background:#a68e38;" title="Reconnect Stream" onclick="reconnectActiveCall()">⚡</button>
-      <button class="icon-btn" style="background:var(--danger); width:60px; height:60px;" onclick="hangupActiveCall()">✖</button>
+      <button class="icon-btn" style="background:#555;" title="Switch Camera" id="switchCamBtn">🔄</button>
+      <button class="icon-btn" style="background:#444;" title="Screen Share" id="screenShareBtn">🖥️</button>
+      <button class="icon-btn" style="background:#a68e38;" title="Reconnect Stream" id="reconnectCallBtn">⚡</button>
+      <button class="icon-btn" style="background:var(--danger); width:60px; height:60px;" id="hangupCallBtn">✖</button>
     </div>
   </div>
 
@@ -439,29 +447,65 @@
     let callInterval = null;
     let callSeconds = 0;
 
-    // Fix module isolation scoping errors by mapping cleanly to window object
-    window.handleAvatarError = function(img, name) { 
-      img.src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(name)}`; 
-    };
-
-    window.toggleMainSidebar = function() {
+    // Route event actions locally to prevent modular encapsulation errors
+    document.getElementById('sidebarToggleBtn').addEventListener('click', () => {
       document.getElementById('appSidebar').classList.toggle('open');
-    };
+    });
+    document.getElementById('toRegisterLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(true); });
+    document.getElementById('toLoginLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(false); });
+    document.getElementById('loginSubmitBtn').addEventListener('click', handleAuthentication);
+    document.getElementById('registerSubmitBtn').addEventListener('click', handleRegistration);
+    document.getElementById('pendingDisconnectBtn').addEventListener('click', signOutSession);
+    document.getElementById('logoutBtn').addEventListener('click', signOutSession);
+    document.getElementById('topProfileBlock').addEventListener('click', openMySettings);
+    document.getElementById('cancelProfileBtn').addEventListener('click', closeProfileModal);
+    document.getElementById('saveProfileBtn').addEventListener('click', saveProfileChanges);
+    document.getElementById('addBucketBtn').addEventListener('click', addToBucketList);
+    document.getElementById('streamVideoBtn').addEventListener('click', setWatchRoomUrl);
+    document.getElementById('voiceCallBtn').addEventListener('click', () => makePeerCall(false));
+    document.getElementById('videoCallBtn').addEventListener('click', () => makePeerCall(true));
+    document.getElementById('tabChatBtn').addEventListener('click', () => switchTab('chat'));
+    document.getElementById('tabTimelineBtn').addEventListener('click', () => switchTab('timeline'));
+    document.getElementById('cancelReplyBtn').addEventListener('click', cancelMessageReply);
+    document.getElementById('attachFileBtn').addEventListener('click', () => document.getElementById('chatFileInput').click());
+    document.getElementById('chatFileInput').addEventListener('change', (e) => handleChatUpload(e.target));
+    document.getElementById('voiceRecBtn').addEventListener('click', toggleVoiceRecording);
+    document.getElementById('cancelVoiceBtn').addEventListener('click', cancelVoiceRecording);
+    document.getElementById('sendVoiceBtn').addEventListener('click', stopAndSendVoice);
+    document.getElementById('sendBtn').addEventListener('click', sendTextMessage);
+    document.getElementById('chatInput').addEventListener('input', broadcastTypingStatus);
+    document.getElementById('postFileBtn').addEventListener('click', () => document.getElementById('postFileInput').click());
+    document.getElementById('postFileInput').addEventListener('change', (e) => handlePostFileSelected(e.target));
+    document.getElementById('submitPostBtn').addEventListener('click', submitTimelinePost);
+    document.getElementById('closeInspectBtn').addEventListener('click', () => document.getElementById('profileInspectModal').classList.remove('active'));
+    document.getElementById('avatarFileBtn').addEventListener('click', () => document.getElementById('avatarFileInput').click());
+    document.getElementById('avatarFileInput').addEventListener('change', (e) => handleAvatarFileSelected(e.target));
+    document.getElementById('editAnniversary').addEventListener('change', (e) => saveAnniversary(e.target.value));
+    document.getElementById('themeSelect').addEventListener('change', (e) => applyPortalTheme(e.target.value));
+    document.getElementById('accentColorPicker').addEventListener('change', (e) => applyAccentColor(e.target.value));
+    document.getElementById('customRoomNameInput').addEventListener('change', (e) => changeRoomName(e.target.value));
+    document.getElementById('myMoodSelect').addEventListener('change', (e) => updateMyMood(e.target.value));
+    document.getElementById('acceptCallBtn').addEventListener('click', acceptIncomingCall);
+    document.getElementById('declineCallBtn').addEventListener('click', rejectIncomingCall);
+    document.getElementById('switchCamBtn').addEventListener('click', switchVideoCamera);
+    document.getElementById('screenShareBtn').addEventListener('click', toggleScreenSharing);
+    document.getElementById('reconnectCallBtn').addEventListener('click', reconnectActiveCall);
+    document.getElementById('hangupCallBtn').addEventListener('click', hangupActiveCall);
 
-    window.toggleAuthMode = function(toRegister) {
+    function toggleAuthMode(toRegister) {
       document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
       document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
-    };
+    }
 
-    window.handleAuthentication = async function() {
+    async function handleAuthentication() {
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
       if (error) { document.getElementById('authErr').textContent = error.message; return; }
       checkSessionState(data.user);
-    };
+    }
 
-    window.handleRegistration = async function() {
+    async function handleRegistration() {
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
@@ -471,7 +515,7 @@
         await supabaseClient.from('profiles').insert([{ id: data.user.id, name: name, status: 'approved' }]);
         checkSessionState(data.user);
       }
-    };
+    }
 
     async function checkSessionState(user) {
       if (!user) return;
@@ -491,13 +535,13 @@
       document.getElementById(id).classList.add('active');
     }
 
-    window.signOutSession = async function() {
+    async function signOutSession() {
       if(peer) peer.destroy();
       await supabaseClient.auth.signOut();
       location.reload();
-    };
+    }
 
-    window.openMySettings = function() {
+    function openMySettings() {
       const myProfile = cachedProfiles[currentUser.id] || {};
       document.getElementById('editProfileName').value = myProfile.name || '';
       document.getElementById('editProfileDob').value = myProfile.dob || '';
@@ -505,11 +549,11 @@
       document.getElementById('avatarUploadStatus').textContent = "";
       uploadedAvatarUrl = myProfile.avatar_url || null;
       document.getElementById('profileModal').classList.add('active');
-    };
+    }
     
-    window.closeProfileModal = function() { document.getElementById('profileModal').classList.remove('active'); };
+    function closeProfileModal() { document.getElementById('profileModal').classList.remove('active'); }
     
-    window.handleAvatarFileSelected = async function(inputElement) {
+    async function handleAvatarFileSelected(inputElement) {
       const file = inputElement.files[0];
       if (!file) return;
       document.getElementById('avatarUploadStatus').textContent = "Uploading Image...";
@@ -522,9 +566,9 @@
       uploadedAvatarUrl = urlData.publicUrl;
       document.getElementById('avatarFileBtn').textContent = "✅ File Selected";
       document.getElementById('avatarUploadStatus').textContent = "Avatar ready to save!";
-    };
+    }
 
-    window.saveProfileChanges = async function() {
+    async function saveProfileChanges() {
       const updatedName = document.getElementById('editProfileName').value.trim();
       const dob = document.getElementById('editProfileDob').value.trim();
       const nasty = document.getElementById('editProfileNasty').value;
@@ -541,26 +585,26 @@
       
       closeProfileModal();
       location.reload();
-    };
+    }
 
-    window.applyPortalTheme = function(themeClass) {
+    function applyPortalTheme(themeClass) {
       document.body.className = '';
       document.body.classList.add(`theme-${themeClass}`);
       localStorage.setItem('user-theme', themeClass);
-    };
+    }
 
-    window.applyAccentColor = function(colorHex) {
+    function applyAccentColor(colorHex) {
       document.documentElement.style.setProperty('--gold', colorHex);
       localStorage.setItem('user-accent', colorHex);
-    };
+    }
 
-    window.changeRoomName = function(roomName) {
+    function changeRoomName(roomName) {
       if(!roomName) return;
       document.getElementById('topBarTitle').textContent = roomName;
       localStorage.setItem('custom-room-title', roomName);
-    };
+    }
 
-    window.inspectPartnerProfile = function(partnerId) {
+    function inspectPartnerProfile(partnerId) {
       const profile = cachedProfiles[partnerId] || { name: 'Partner' };
       document.getElementById('inspectAvatar').src = profile.avatar_url || '';
       window.handleAvatarError(document.getElementById('inspectAvatar'), profile.name);
@@ -568,9 +612,9 @@
       document.getElementById('inspectDob').textContent = profile.dob || "Unknown Secrets";
       document.getElementById('inspectNasty').textContent = profile.nasty_details || "No dirty details declared yet...";
       document.getElementById('profileInspectModal').classList.add('active');
-    };
+    }
 
-    window.switchTab = function(target) {
+    function switchTab(target) {
       document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
       if(target === 'chat') {
@@ -581,7 +625,7 @@
         document.getElementById('panelTimeline').classList.add('active');
         document.getElementById('tabTimelineBtn').classList.add('active');
       }
-    };
+    }
 
     async function initializePortal(myProfile) {
       const savedTheme = localStorage.getItem('user-theme') || 'midnight';
@@ -638,7 +682,7 @@
       }, 1000);
     }
 
-    window.makePeerCall = async function(wantsVideo) {
+    async function makePeerCall(wantsVideo) {
       document.getElementById('callOverlay').classList.add('active');
       document.getElementById('callStatusMessage').textContent = "Ringing partner line...";
       
@@ -660,9 +704,9 @@
       } catch (err) {
         alert("Unable to fetch media tracks. Check permission access policies.");
       }
-    };
+    }
 
-    window.acceptIncomingCall = async function() {
+    async function acceptIncomingCall() {
       document.getElementById('incomingBanner').classList.remove('active');
       document.getElementById('callOverlay').classList.add('active');
       document.getElementById('callStatusMessage').textContent = "Connecting Secure Stream...";
@@ -681,9 +725,9 @@
       } catch(err) {
         alert("Failed to access camera/mic line.");
       }
-    };
+    }
 
-    window.switchVideoCamera = async function() {
+    async function switchVideoCamera() {
       if(!localStream) return;
       const videoTrack = localStream.getVideoTracks()[0];
       if(!videoTrack) return;
@@ -695,9 +739,9 @@
       const newTrack = newVideo.getVideoTracks()[0];
       localStream.addTrack(newTrack);
       document.getElementById('localVideo').srcObject = localStream;
-    };
+    }
 
-    window.toggleScreenSharing = async function() {
+    async function toggleScreenSharing() {
       try {
         if(!screenStream) {
           screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
@@ -712,23 +756,23 @@
       } catch(err) {
         console.warn("Screen share canceled or unapproved.");
       }
-    };
+    }
 
-    window.reconnectActiveCall = function() {
+    function reconnectActiveCall() {
       hangupActiveCall();
       alert("Reconnecting Line...");
       makePeerCall(true);
-    };
+    }
 
-    window.rejectIncomingCall = function() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); };
+    function rejectIncomingCall() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); }
     
-    window.hangupActiveCall = function() {
+    function hangupActiveCall() {
       document.getElementById('callOverlay').classList.remove('active');
       clearInterval(callInterval);
       if(currentCall) currentCall.close();
       if(localStream) localStream.getTracks().forEach(t=>t.stop());
       if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
-    };
+    }
 
     async function fetchChatHistory() {
       let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
@@ -768,13 +812,13 @@
       const avatarSrc = profile.avatar_url || '';
 
       row.innerHTML = `
-        <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" onclick="inspectPartnerProfile('${msg.sender_uid}')" />
+        <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" />
         <div class="msg-content-block">
           <span class="sender-label">${profile.name}</span>
           <div class="msg">
             <div class="msg-actions">
-              <button class="msg-action-btn" onclick="setMessageReply('${msg.id}', '${msg.text || 'Media Message'}')">Reply</button>
-              ${isMe ? `<button class="msg-action-btn" onclick="editYourMessage('${msg.id}', '${msg.text || ''}')">Edit</button>` : ''}
+              <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media Message'}">Reply</button>
+              ${isMe ? `<button class="msg-edit-act-btn" data-id="${msg.id}" data-text="${msg.text || ''}">Edit</button>` : ''}
             </div>
             ${replyMarkup}
             <div id="text-node-${msg.id}">${msg.text ? `<div>${msg.text}</div>` : ''}</div>
@@ -786,30 +830,42 @@
           </div>
         </div>
       `;
+
+      // Event listener assignment to cleanly handle clicks across modular boundaries
+      row.querySelector('.msg-reply-act-btn').addEventListener('click', (e) => {
+        setMessageReply(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
+      });
+      if(isMe) {
+        row.querySelector('.msg-edit-act-btn').addEventListener('click', (e) => {
+          editYourMessage(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
+        });
+      }
+      row.querySelector('.msg-avatar').addEventListener('click', () => inspectPartnerProfile(msg.sender_uid));
+
       chatArea.appendChild(row);
       window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
       chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    window.setMessageReply = function(id, partialText) {
+    function setMessageReply(id, partialText) {
       replyingToMsgId = id;
       const hud = document.getElementById('replyHud');
       document.getElementById('replyHudText').textContent = `Replying to: "${partialText}"`;
       hud.classList.add('active');
-    };
+    }
 
-    window.cancelMessageReply = function() {
+    function cancelMessageReply() {
       replyingToMsgId = null;
       document.getElementById('replyHud').classList.remove('active');
-    };
+    }
 
-    window.editYourMessage = function(id, oldText) {
+    function editYourMessage(id, oldText) {
       isEditingMsgId = id;
       document.getElementById('chatInput').value = oldText;
       document.getElementById('sendBtn').textContent = "Update";
-    };
+    }
 
-    window.sendTextMessage = async function() {
+    async function sendTextMessage() {
       const input = document.getElementById('chatInput');
       const txt = input.value.trim();
       if(!txt) return;
@@ -835,12 +891,12 @@
         is_read: false,
         reply_to_text: replyData
       }]);
-    };
+    }
 
     async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
     async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
 
-    window.handleChatUpload = async function(inputElement) {
+    async function handleChatUpload(inputElement) {
       const file = inputElement.files[0]; if (!file) return;
       const uniqueName = `${Date.now()}-${file.name}`;
       const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
@@ -848,9 +904,9 @@
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
       await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
-    };
+    }
 
-    window.toggleVoiceRecording = function() {
+    function toggleVoiceRecording() {
       if (!isRecording) {
         navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
           mediaRecorder = new MediaRecorder(stream);
@@ -861,14 +917,14 @@
           document.getElementById('voiceRecordOverlay').classList.add('active');
         }).catch(err => alert("Microphone hardware access denied. Check system privacy options."));
       }
-    };
+    }
 
-    window.cancelVoiceRecording = function() {
+    function cancelVoiceRecording() {
       if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
       document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
+    }
 
-    window.stopAndSendVoice = function() {
+    function stopAndSendVoice() {
       if(mediaRecorder) {
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
@@ -882,19 +938,18 @@
         isRecording = false;
       }
       document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
+    }
 
-    window.updateMyMood = async function(mood) {
+    async function updateMyMood(mood) {
       if(broadcastChannel) {
         broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
       }
       localStorage.setItem('my-mood', mood);
-    };
+    }
 
     function setupPresenceAndBroadcasts(username) {
-      broadcastChannel = supabaseClient.channel('room-communications', { config: { presence: { key: currentUser.id } } });
+      broadcastChannel = supabaseClient.channel('room-communications');
       
-      // FIX: Setup channels BEFORE chaining `.subscribe()` execution blocks
       broadcastChannel
         .on('presence', { event: 'sync' }, () => {
           const state = broadcastChannel.presenceState();
@@ -930,27 +985,31 @@
           renderMessageBubble(payload.new); 
           if(payload.new.sender_uid !== currentUser.id) markAsRead(payload.new.id);
         })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
+          const txtNode = document.getElementById(`text-node-${payload.new.id}`);
+          if(txtNode && payload.new.text) txtNode.innerHTML = `<div>${payload.new.text}</div>`;
+        })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
         .subscribe();
     }
 
-    window.broadcastTypingStatus = function() {
+    function broadcastTypingStatus() {
       if(!broadcastChannel) return;
       broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
       clearTimeout(typingTimeout);
       typingTimeout = setTimeout(() => {
         broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
       }, 2000);
-    };
+    }
 
-    window.setWatchRoomUrl = function() {
+    function setWatchRoomUrl() {
       const url = document.getElementById('sharedYoutubeUrl').value.trim();
       if(!url) return;
       applyWatchRoomVideo(url);
       if(broadcastChannel) {
         broadcastChannel.send({ type: 'broadcast', event: 'watch', payload: { url } });
       }
-    };
+    }
 
     function applyWatchRoomVideo(url) {
       let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -961,10 +1020,10 @@
       }
     }
 
-    window.saveAnniversary = function(val) {
+    function saveAnniversary(val) {
       localStorage.setItem('anniversary-date', val);
       calculateAnniversary(val);
-    };
+    }
 
     function loadAnniversary() {
       const val = localStorage.getItem('anniversary-date') || "2024-01-01";
@@ -979,14 +1038,14 @@
       document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
     }
 
-    window.addToBucketList = function() {
+    function addToBucketList() {
       const item = prompt("Add a wild goal to our Bucket List:");
       if(!item) return;
       let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
       list.push(item);
       localStorage.setItem('couple-bucket', JSON.stringify(list));
       renderBucketList();
-    };
+    }
 
     function loadBucketList() { renderBucketList(); }
     
@@ -996,17 +1055,20 @@
       container.innerHTML = '';
       list.forEach((item, index) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span>🔥 ${item}</span><span style="color:var(--danger); cursor:pointer;" onclick="deleteBucket(${index})">✕</span>`;
+        li.innerHTML = `<span>🔥 ${item}</span><span class="del-bucket-btn" data-idx="${index}" style="color:var(--danger); cursor:pointer;">✕</span>`;
+        li.querySelector('.del-bucket-btn').addEventListener('click', (e) => {
+          deleteBucket(parseInt(e.target.getAttribute('data-idx')));
+        });
         container.appendChild(li);
       });
     }
 
-    window.deleteBucket = function(index) {
+    function deleteBucket(index) {
       let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
       list.splice(index, 1);
       localStorage.setItem('couple-bucket', JSON.stringify(list));
       renderBucketList();
-    };
+    }
 
     async function fetchTimelinePosts() {
       const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
@@ -1033,12 +1095,12 @@
       }
     }
 
-    window.handlePostFileSelected = function(el) {
+    function handlePostFileSelected(el) {
       selectedPostFile = el.files[0];
       if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ File Selected";
-    };
+    }
 
-    window.submitTimelinePost = async function() {
+    async function submitTimelinePost() {
       const textInput = document.getElementById('postText'); const text = textInput.value.trim();
       if(!text && !selectedPostFile) return;
       let mediaUrl = null;
@@ -1050,7 +1112,7 @@
       }
       await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
       textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
-    };
+    }
   </script>
 </body>
 </html>
