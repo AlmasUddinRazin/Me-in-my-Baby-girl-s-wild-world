@@ -195,24 +195,38 @@
     <div class="auth-card">
       <h1>Our Wild World</h1>
       <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Secure Vault Authorization Required.</p>
-      <div id="loginForm">
-        <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
-        <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
+      
+      <form id="loginForm" onsubmit="event.preventDefault();">
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="authEmail" name="username" autocomplete="username" placeholder="you@example.com" required />
+        </div>
+        <div class="field">
+          <label>Secure Password</label>
+          <input type="password" id="authPassword" name="password" autocomplete="current-password" placeholder="••••••••" required />
+        </div>
         <div class="err" id="authErr"></div>
-        <button class="btn gold" id="loginSubmitBtn">Enter Space</button>
+        <button type="submit" class="btn gold" id="loginSubmitBtn">Enter Space</button>
         <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
           Need access? <a href="#" style="color:var(--gold);" id="toRegisterLink">Request Registration</a>
         </p>
-      </div>
-      <div id="registerForm" style="display:none;">
+      </form>
+
+      <form id="registerForm" style="display:none;" onsubmit="event.preventDefault();">
         <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
-        <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
-        <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
-        <button class="btn" id="registerSubmitBtn">Submit Application</button>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="regEmail" name="username" autocomplete="username" placeholder="you@example.com" />
+        </div>
+        <div class="field">
+          <label>Create Password</label>
+          <input type="password" id="regPassword" name="password" autocomplete="new-password" placeholder="••••••••" />
+        </div>
+        <button type="submit" class="btn" id="registerSubmitBtn">Submit Application</button>
         <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
           Already registered? <a href="#" style="color:var(--gold);" id="toLoginLink">Sign In</a>
         </p>
-      </div>
+      </form>
     </div>
   </div>
 
@@ -429,7 +443,18 @@
 
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
     const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
-    const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
+    
+    // Configured with web workers and background heartbeats so mobile connections never drop when backgrounded!
+    const supabaseClient = createClient(SUPABASE_URL, activeAnonToken, {
+      realtime: {
+        worker: true,
+        heartbeatCallback: (status) => {
+          if (status === 'disconnected') {
+            supabaseClient.realtime.connect();
+          }
+        }
+      }
+    });
 
     let currentUser = null; 
     let cachedProfiles = {};
@@ -457,8 +482,8 @@
     });
     document.getElementById('toRegisterLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(true); });
     document.getElementById('toLoginLink').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(false); });
-    document.getElementById('loginSubmitBtn').addEventListener('click', handleAuthentication);
-    document.getElementById('registerSubmitBtn').addEventListener('click', handleRegistration);
+    document.getElementById('loginForm').addEventListener('submit', handleAuthentication);
+    document.getElementById('registerForm').addEventListener('submit', handleRegistration);
     document.getElementById('pendingDisconnectBtn').addEventListener('click', signOutSession);
     document.getElementById('logoutBtn').addEventListener('click', signOutSession);
     document.getElementById('topProfileBlock').addEventListener('click', openMySettings);
@@ -500,7 +525,8 @@
       document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
     }
 
-    async function handleAuthentication() {
+    async function handleAuthentication(e) {
+      if (e) e.preventDefault();
       const email = document.getElementById('authEmail').value.trim();
       const password = document.getElementById('authPassword').value;
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
@@ -508,7 +534,8 @@
       checkSessionState(data.user);
     }
 
-    async function handleRegistration() {
+    async function handleRegistration(e) {
+      if (e) e.preventDefault();
       const name = document.getElementById('regName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
@@ -536,22 +563,23 @@
       }
 
       if (!profile) {
-        const { data } = await supabaseClient.from('profiles').select('*');
-        if (data) {
-          profile = data.find(p => p.id === currentUser.id || p.uid === currentUser.id || p.user_id === currentUser.id);
-        }
+        try {
+          const { data } = await supabaseClient.from('profiles').select('*');
+          if (data) {
+            profile = data.find(p => p.id === currentUser.id || p.uid === currentUser.id || p.user_id === currentUser.id);
+          }
+        } catch(e){}
       }
 
       if (!profile) {
         const insertPayload = { name: user.email.split('@')[0], status: 'approved' };
         insertPayload[detectedProfileIdKey || 'id'] = currentUser.id;
-        const { data: newProf } = await supabaseClient.from('profiles').insert([insertPayload]).select().single();
-        profile = newProf;
-      }
-
-      if (profile && profile.status !== 'approved') {
-        await supabaseClient.from('profiles').update({ status: 'approved' }).eq(detectedProfileIdKey || 'id', currentUser.id);
-        profile.status = 'approved';
+        try {
+          const { data: newProf } = await supabaseClient.from('profiles').insert([insertPayload]).select().single();
+          profile = newProf;
+        } catch(e) {
+          profile = insertPayload;
+        }
       }
 
       initializePortal(profile);
@@ -955,7 +983,6 @@
       let replyData = replyingToMsgId ? document.getElementById('replyHudText').textContent : null;
       cancelMessageReply();
 
-      // We populate BOTH columns to cover whatever database schema layout you have set up
       const { error } = await supabaseClient.from('messages').insert([{ 
         sender_uid: currentUser.id, 
         sender_id: currentUser.id, 
@@ -1015,4 +1042,172 @@
         mediaRecorder.onstop = async () => {
           const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
           const uniqueName = `${Date.now()}-voice.webm`;
-          await
+          await supabaseClient.storage.from('media').upload(uniqueName, new File([audioBlob], "voice.webm"));
+          const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+          const { error } = await supabaseClient.from('messages').insert([{ 
+            sender_uid: currentUser.id, 
+            sender_id: currentUser.id, 
+            media_url: data.publicUrl, 
+            media_type: 'audio', 
+            is_read: false 
+          }]);
+          if(error) alert("Audio insert failed: " + error.message);
+          fetchChatHistory();
+        };
+        mediaRecorder.stop(); isRecording = false;
+      }
+      document.getElementById('voiceRecordOverlay').classList.remove('active');
+    }
+
+    async function updateMyMood(mood) {
+      if(broadcastChannel) broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
+      localStorage.setItem('my-mood', mood);
+    }
+
+    // Consolidated Realtime Configuration Pipeline (Required by modern supabase-js)
+    async function setupPresenceAndBroadcasts(username) {
+      broadcastChannel = supabaseClient.channel('room-communications');
+      
+      broadcastChannel
+        .on('presence', { event: 'sync' }, () => {
+          const state = broadcastChannel.presenceState();
+          const partnerId = getPartnerId();
+          const dot = document.getElementById('presenceIndicator');
+          const whoLine = document.getElementById('whoLine');
+
+          // Check presence state keys directly
+          const isPartnerPresent = Object.values(state).some(presenceList => 
+            presenceList.some(p => p.name !== username)
+          );
+
+          if (isPartnerPresent) {
+            dot.className = 'status-dot online';
+            whoLine.innerHTML = `<span style="color:var(--success); font-weight:bold;">Online</span>`;
+          } else {
+            dot.className = 'status-dot';
+            const localLeft = localStorage.getItem(`last_seen_${partnerId}`);
+            whoLine.innerHTML = localLeft ? `Last seen ${localLeft}` : `Offline`;
+          }
+        })
+        .on('presence', { event: 'leave' }, ({ key }) => {
+          const partnerId = getPartnerId();
+          if (key.includes(partnerId.replace(/[^a-zA-Z0-9]/g, ''))) {
+            const formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            localStorage.setItem(`last_seen_${partnerId}`, formattedTime);
+            document.getElementById('presenceIndicator').className = 'status-dot';
+            document.getElementById('whoLine').innerHTML = `Last seen ${formattedTime}`;
+          }
+        })
+        .on('broadcast', { event: 'typing' }, payload => {
+          document.getElementById('typingIndicatorField').textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
+        })
+        .on('broadcast', { event: 'mood' }, payload => {
+          if(payload.payload.uid !== currentUser.id) document.getElementById('partnerMoodDisplay').textContent = `Partner: ${payload.payload.mood}`;
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchChatHistory())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, () => loadBucketList())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => fetchTimelinePosts());
+
+      broadcastChannel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await broadcastChannel.track({ name: username, online_at: new Date().toISOString() });
+          const myMood = localStorage.getItem('my-mood') || 'Normal';
+          document.getElementById('myMoodSelect').value = myMood;
+          broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood: myMood } });
+        }
+      });
+    }
+
+    function broadcastTypingStatus() {
+      if(!broadcastChannel) return;
+      broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
+      clearTimeout(typingTimeout);
+      typingTimeout = setTimeout(() => broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } }), 2000);
+    }
+
+    function saveAnniversary(val) { localStorage.setItem('anniversary-date', val); calculateAnniversary(val); }
+    function loadAnniversary() { const val = localStorage.getItem('anniversary-date') || "2024-01-01"; document.getElementById('editAnniversary').value = val; calculateAnniversary(val); }
+    
+    function calculateAnniversary(dateStr) {
+      const days = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
+      document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
+    }
+
+    async function addToBucketList() {
+      const item = prompt("Add a wild goal to our Bucket List:"); if(!item) return;
+      await supabaseClient.from('bucket_items').insert([{ text: item }]); loadBucketList();
+    }
+
+    async function loadBucketList() {
+      const { data } = await supabaseClient.from('bucket_items').select('*').order('created_at', { ascending: true });
+      const container = document.getElementById('bucketListUi'); container.innerHTML = '';
+      if (data) {
+        data.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>🔥 ${item.text}</span><span class="del-bucket-btn" data-id="${item.id}" style="color:var(--danger); cursor:pointer;">✕</span>`;
+          li.querySelector('.del-bucket-btn').addEventListener('click', async (e) => {
+            await supabaseClient.from('bucket_items').delete().eq('id', e.target.getAttribute('data-id')); loadBucketList();
+          });
+          container.appendChild(li);
+        });
+      }
+    }
+
+    async function fetchTimelinePosts() {
+      const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
+      if (data) {
+        const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
+        data.forEach(post => {
+          const authorUid = post.sender_uid || post.sender_id;
+          const profile = cachedProfiles[authorUid] || { name: authorUid === currentUser.id ? 'Me' : 'Babygirl 😺' };
+          
+          const card = document.createElement('div'); card.className = 'post-card';
+          let reactionList = post.reactions || [];
+          let loveCount = reactionList.filter(r => r.emoji === "❤️").length;
+
+          const avatarSrc = profile.avatar_url || profile.avatar || profile.profile_pic || '';
+
+          card.innerHTML = `
+            <div class="post-header">
+              <img src="${avatarSrc}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" onerror="window.handleAvatarError(this, '${profile.name}')" />
+              <div><div class="post-author">${profile.name}</div><div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div></div>
+            </div>
+            <div class="post-body">${post.text || ''}</div>
+            ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
+            <div class="post-actions-bar">
+              <button class="post-action-btn" data-postid="${post.id}">
+                ❤️ React (${loveCount})
+              </button>
+            </div>
+          `;
+          card.querySelector('.post-action-btn').addEventListener('click', () => handlePostReactionToggle(post.id));
+          feed.appendChild(card);
+        });
+      }
+    }
+
+    function handlePostFileSelected(el) { selectedPostFile = el.files[0]; if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ Photo Attached"; }
+
+    async function submitTimelinePost() {
+      const textInput = document.getElementById('postText'); const text = textInput.value.trim();
+      if(!text && !selectedPostFile) return;
+      let mediaUrl = null;
+      if(selectedPostFile) {
+        const uniqueName = `${Date.now()}-${selectedPostFile.name}`;
+        await supabaseClient.storage.from('media').upload(uniqueName, selectedPostFile);
+        const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
+        mediaUrl = data.publicUrl;
+      }
+      const { error } = await supabaseClient.from('posts').insert([{ 
+        sender_uid: currentUser.id, 
+        sender_id: currentUser.id, 
+        text: text, 
+        media_url: mediaUrl, 
+        reactions: [] 
+      }]);
+      if (error) alert("Post failed: " + error.message);
+      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo"; fetchTimelinePosts();
+    }
+  </script>
+</body>
+</html>
