@@ -9,405 +9,72 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <style>
-    :root {
-      --bg: #0F1220;
-      --bg-deep: #0A0C16;
-      --card: #1D1730;
-      --card-2: #241C3A;
-      --rose: #D9A5A0;
-      --gold: #E8C170;
-      --text: #F2E9E4;
-      --muted: #9C8AA5;
-      --border: rgba(232,193,112,0.16);
-      --danger: #C97064;
-      --success: #64C9A2;
-      --radius: 18px;
-    }
-
-    body.theme-crimson {
-      --bg: #1C0A10; --bg-deep: #120408; --card: #30121D; --card-2: #3D1826; --rose: #E87095; --gold: #E8BC70; --border: rgba(232,112,149,0.2);
-    }
-    body.theme-gold {
-      --bg: #1A160D; --bg-deep: #100D06; --card: #2E2514; --card-2: #3B2F1B; --rose: #D9C3A0; --gold: #F7D070; --border: rgba(247,208,112,0.2);
-    }
-    body.theme-midnight {
-      --bg: #030712; --bg-deep: #02040A; --card: #111827; --card-2: #1F2937; --rose: #93C5FD; --gold: #FCD34D; --border: rgba(255,255,255,0.08);
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin:0; height: 100vh; height: -webkit-fill-available;
-      background: radial-gradient(circle at 20% -10%, rgba(217,165,160,0.10), transparent 45%), radial-gradient(circle at 90% 10%, rgba(232,193,112,0.08), transparent 40%), var(--bg);
-      background-size: cover; background-position: center;
-      color: var(--text); font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased;
-      overflow: hidden; position: fixed; width: 100%;
-    }
-    h1,h2,h3 { font-family: 'Cormorant Garamond', serif; font-weight:600; letter-spacing:0.01em; }
+    :root { --bg: #0F1220; --bg-deep: #0A0C16; --card: #1D1730; --card-2: #241C3A; --rose: #D9A5A0; --gold: #E8C170; --text: #F2E9E4; --muted: #9C8AA5; --border: rgba(232,193,112,0.16); --danger: #C97064; --success: #64C9A2; --radius: 18px; }
+    body { margin:0; height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
     .screen { display:none; height:100vh; align-items:center; justify-content:center; padding:24px; }
     .screen.active { display:flex; }
-
-    .auth-card {
-      width:100%; max-width:400px; background: linear-gradient(180deg, var(--card), var(--card-2));
-      border: 1px solid var(--border); border-radius: var(--radius); padding: 40px 34px; text-align:center; box-shadow: 0 30px 60px rgba(0,0,0,0.35);
-    }
-    .auth-card h1 { font-size:2.1rem; margin: 0 0 6px; color: var(--gold); }
+    .auth-card { width:100%; max-width:400px; background: linear-gradient(180deg, var(--card), var(--card-2)); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; text-align:center; }
     .field { text-align:left; margin-bottom:16px; }
-    .field label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px; }
-    .field input, .field select, .field textarea {
-      width:100%; padding:12px 14px; border-radius:10px; border:1px solid var(--border);
-      background: rgba(0,0,0,0.25); color:var(--text); font-family:'Inter'; font-size:0.95rem;
-    }
-    .btn {
-      width:100%; padding:13px; border-radius:10px; border:none; background: linear-gradient(180deg, var(--rose), #c98b85);
-      color:#241C3A; font-weight:600; font-size:0.95rem; cursor:pointer; transition: transform 0.15s ease;
-    }
+    .field input, .field select, .field textarea { width:100%; padding:12px; border-radius:10px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); }
+    .btn { width:100%; padding:13px; border-radius:10px; border:none; background: linear-gradient(180deg, var(--rose), #c98b85); cursor:pointer; }
     .btn.gold { background: linear-gradient(180deg, var(--gold), #c99f4d); }
-    .btn.ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
-    .btn.danger { background: linear-gradient(180deg, var(--danger), #a9483d); color:#fff; }
-    .btn.small { width:auto; padding:6px 12px; font-size:0.8rem; }
-    .err { color: var(--danger); font-size:0.82rem; margin-bottom:14px; text-align:left; }
-
     #appScreen { align-items:stretch; padding:0; }
-    .app-layout { display: flex; width: 100vw; height: 100vh; position: relative; }
-    
-    /* Responsive Side Drawer with 3-bar access controls */
-    .sidebar {
-      width: 320px; background: var(--bg-deep); border-right: 1px solid var(--border);
-      display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 100;
-    }
-    @media(max-width: 900px) {
-      .sidebar { position: absolute; left: 0; top: 70px; bottom: 0; transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); box-shadow: 10px 0 30px rgba(0,0,0,0.5); }
-    }
-
-    .app-wrap { display:flex; flex-direction:column; flex: 1; height:100vh; position: relative; min-width: 0; }
-    .topbar {
-      display:flex; align-items:center; justify-content:space-between; padding: 12px 20px;
-      border-bottom:1px solid var(--border); background: rgba(13,11,24,0.75); backdrop-filter: blur(8px); flex-shrink: 0;
-      height: 70px;
-    }
-    .profile-meta-block { display:flex; align-items:center; gap:12px; cursor: pointer; }
-    .avatar-container { position: relative; width: 44px; height: 44px; }
-    .avatar { width:100%; height:100%; border-radius:50%; object-fit:cover; border:1.5px solid var(--gold); background: #241C3A; }
-    .status-dot { position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--bg); background: var(--danger); }
-    .status-dot.online { background: var(--success); box-shadow: 0 0 8px var(--success); }
-    .top-actions { display:flex; gap:8px; align-items:center; }
-    .icon-btn {
-      width:40px; height:40px; border-radius:50%; border:1px solid var(--border);
-      background: var(--card); color:var(--text); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:1.05rem;
-    }
-
-    .nav-tabs { display: flex; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .nav-tab { flex: 1; padding: 14px; text-align: center; cursor: pointer; font-weight: 600; color: var(--muted); border-bottom: 2px solid transparent; }
-    .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); background: rgba(255,255,255,0.02); }
-    .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; min-height: 0; }
+    .app-layout { display: flex; width: 100vw; height: 100vh; }
+    .sidebar { width: 320px; background: var(--bg-deep); border-right: 1px solid var(--border); padding: 20px; }
+    .app-wrap { display:flex; flex-direction:column; flex: 1; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; padding: 12px 20px; border-bottom:1px solid var(--border); height: 70px; }
+    .avatar { width:44px; height:44px; border-radius:50%; object-fit:cover; border:1.5px solid var(--gold); }
+    .content-panel { flex: 1; display: none; overflow-y: auto; flex-direction: column; }
     .content-panel.active { display: flex; }
-
-    .chat-area { flex:1; overflow-y:auto; padding: 20px 16px; display:flex; flex-direction:column; gap:12px; min-height: 0; -webkit-overflow-scrolling: touch; }
-    .msg-row { display:flex; gap:8px; max-width:85%; align-items: flex-end; }
+    .chat-area { flex:1; overflow-y:auto; padding: 20px; display:flex; flex-direction:column; gap:12px; }
+    .msg-row { display:flex; gap:8px; max-width:85%; }
     .msg-row.mine { align-self:flex-end; flex-direction: row-reverse; }
-    .msg-row.theirs { align-self:flex-start; flex-direction: row; }
-    .msg-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--gold); background: #241C3A; flex-shrink: 0; cursor: pointer; }
-    .msg-content-block { display:flex; flex-direction:column; max-width: calc(100% - 42px); }
-    .msg-row.mine .msg-content-block { align-items: flex-end; }
-    .msg-row.theirs .msg-content-block { align-items: flex-start; }
-    .sender-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 3px; padding: 0 4px; }
-    
-    .msg { padding:10px 14px; border-radius:16px; line-height:1.45; font-size:0.92rem; word-wrap:break-word; width: 100%; position: relative; }
-    .msg-row.mine .msg { background: linear-gradient(180deg, var(--rose), #c98b85); color:#241C3A; border-bottom-right-radius:4px; }
-    .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); border-bottom-left-radius:4px; }
-    .msg img { max-width: 250px; max-height: 250px; object-fit: contain; border-radius: 8px; margin-top: 6px; display: block; }
-    
-    .msg-actions { opacity: 0; position: absolute; top: -20px; right: 10px; display: flex; gap: 4px; background: var(--card-2); padding: 2px 6px; border-radius: 8px; border: 1px solid var(--border); transition: opacity 0.2s; z-index: 10; }
-    .msg:hover .msg-actions { opacity: 1; }
-    .msg-action-btn { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 0.7rem; }
-    
-    .msg-meta-line { display:flex; align-items:center; justify-content:flex-end; gap:4px; margin-top:5px; font-size:0.65rem; color: var(--muted); }
-    .msg-row.mine .msg-meta-line { color: rgba(36,28,58,0.7); }
-    .status-tick { font-weight: bold; font-size: 0.75rem; }
-    
-    .typing-indicator-bar { padding: 4px 20px; font-size: 0.8rem; color: var(--gold); font-style: italic; min-height: 22px; }
-
-    .reply-hud { background: var(--card-2); padding: 8px 16px; border-top: 1px solid var(--border); display: none; align-items: center; justify-content: space-between; }
-    .reply-hud.active { display: flex; }
-    .composer-wrapper { border-top:1px solid var(--border); background: #130F22; padding: 8px 12px; flex-shrink: 0; z-index: 50; position: relative; }
-    .voice-record-overlay { position: absolute; inset: 0; background: var(--card-2); display: none; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 60; border-top: 1px solid var(--danger); }
-    .voice-record-overlay.active { display: flex; }
-    .voice-pulse-indicator { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 0.9rem; font-weight: 500; }
-
-    .composer { display:flex; gap:8px; align-items:center; width: 100%; }
-    .composer textarea { flex:1; resize:none; height: 40px; max-height:100px; padding:10px 14px; border-radius:18px; border:1px solid var(--border); background: rgba(0,0,0,0.25); color:var(--text); font-family:inherit; font-size:0.95rem; }
-
-    .modal-overlay { position: fixed; inset: 0; background: rgba(6,5,12,0.85); display: none; align-items: center; justify-content: center; z-index: 500; padding: 20px; }
-    .modal-overlay.active { display: flex; }
-    .profile-setup-card { background: var(--card-2); border: 1px solid var(--gold); border-radius: var(--radius); width: 100%; max-width: 480px; padding: 28px; max-height: 90vh; overflow-y: auto; }
-    
-    .profile-details-grid { display: grid; grid-template-columns: 120px 1fr; gap: 16px; align-items: start; }
-    .profile-details-left img { width: 100%; height: 120px; border-radius: 12px; object-fit: cover; border: 2px solid var(--gold); }
-
-    .sidebar-section { padding: 14px; border-bottom: 1px solid var(--border); }
-    .sidebar-title { font-size: 1rem; color: var(--gold); margin-bottom: 8px; font-weight: 600; display: flex; justify-content: space-between; }
-    .couple-counter { font-size: 1.2rem; font-weight: bold; color: var(--rose); text-align: center; margin: 8px 0; }
-    .couple-list { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; max-height: 120px; overflow-y: auto; }
-    .couple-list li { display: flex; justify-content: space-between; margin-bottom: 6px; background: rgba(0,0,0,0.15); padding: 6px; border-radius: 6px; }
-
-    .timeline-area { padding: 20px 16px; display: flex; flex-direction: column; gap: 20px; max-width: 600px; margin: 0 auto; width: 100%; }
-    .timeline-composer { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
-    .timeline-composer textarea { width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; resize: none; font-family: inherit; }
-    .post-card { background: var(--card-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.2); margin-bottom: 12px; }
-    .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .post-author { font-weight: 600; color: var(--gold); }
-    .post-time { font-size: 0.75rem; color: var(--muted); }
-    .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 12px; }
-    .post-img { max-width: 100%; max-height: 400px; object-fit: contain; border-radius: 10px; border: 1px solid var(--border); margin-top: 8px; display: block; }
-
-    #callOverlay { position:fixed; inset:0; background: #06050C; display:none; align-items:center; justify-content:center; z-index:200; flex-direction:column; }
-    #callOverlay.active { display:flex; }
-    .video-stage { position:relative; width:min(95vw, 680px); aspect-ratio: 4/3; background:#000; border-radius:20px; overflow:hidden; border:1px solid var(--border); }
-    #remoteVideo { width:100%; height:100%; object-fit:cover; }
-    #localVideo { position:absolute; width:25%; bottom:14px; right:14px; border-radius:10px; border:2px solid var(--gold); object-fit:cover; z-index:2; }
-    .call-controls { display:flex; gap:16px; margin-top:22px; flex-wrap: wrap; justify-content: center; }
-    .incoming-banner { position:fixed; top:20px; left:50%; transform:translateX(-50%); background: var(--card); border:2px solid var(--gold); padding:16px 22px; border-radius:14px; display:none; align-items:center; gap:16px; z-index:300; }
-    .incoming-banner.active { display:flex; }
-    .timer-overlay { position: absolute; top: 14px; left: 14px; background: rgba(0,0,0,0.6); padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; color: var(--gold); }
+    .msg { padding:10px 14px; border-radius:16px; font-size:0.92rem; }
+    .msg-row.mine .msg { background: var(--rose); color:#241C3A; }
+    .msg-row.theirs .msg { background: var(--card); border: 1px solid var(--border); }
+    .composer-wrapper { border-top:1px solid var(--border); padding: 10px; }
+    .composer { display:flex; gap:8px; }
   </style>
 </head>
 <body>
   <div id="authScreen" class="screen active">
     <div class="auth-card">
       <h1>Our Wild World</h1>
-      <p style="color:var(--muted); font-size:0.9rem; margin-bottom:24px;">Secure Vault Authorization Required.</p>
       <div id="loginForm">
-        <div class="field"><label>Email Address</label><input type="email" id="authEmail" placeholder="you@example.com" /></div>
-        <div class="field"><label>Secure Password</label><input type="password" id="authPassword" placeholder="••••••••" /></div>
-        <div class="err" id="authErr"></div>
+        <div class="field"><label>Email</label><input type="email" id="authEmail" /></div>
+        <div class="field"><label>Password</label><input type="password" id="authPassword" /></div>
         <button class="btn gold" onclick="handleAuthentication()">Enter Space</button>
-        <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
-          Need access? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(true)">Request Registration</a>
-        </p>
       </div>
-      <div id="registerForm" style="display:none;">
-        <div class="field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name" /></div>
-        <div class="field"><label>Email Address</label><input type="email" id="regEmail" placeholder="you@example.com" /></div>
-        <div class="field"><label>Create Password</label><input type="password" id="regPassword" placeholder="••••••••" /></div>
-        <button class="btn" onclick="handleRegistration()">Submit Application</button>
-        <p style="margin-top:16px; font-size:0.85rem; color:var(--muted);">
-          Already registered? <a href="#" style="color:var(--gold);" onclick="toggleAuthMode(false)">Sign In</a>
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <div id="pendingScreen" class="screen">
-    <div class="auth-card">
-      <h1>Awaiting Access Keys</h1>
-      <p style="color:var(--muted); line-height:1.5;">Your entry profile must be approved by the supervisor.</p>
-      <button class="btn ghost" style="margin-top:20px;" onclick="signOutSession()">Disconnect Session</button>
     </div>
   </div>
 
   <div id="appScreen" class="screen">
     <div class="app-layout">
       <aside class="sidebar" id="appSidebar">
-        <div class="sidebar-section">
-          <div class="sidebar-title"><span>⏳ Together Since</span></div>
-          <div id="anniversaryVal" class="couple-counter">0 Days</div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-title"><span>😈 Current Mood</span></div>
-          <div class="field" style="margin: 0;">
-            <select id="myMoodSelect" onchange="updateMyMood(this.value)">
-              <option value="Normal">Normal</option>
-              <option value="Shy to say">Shy to say</option>
-              <option value="Fucking Horny">Fucking Horny</option>
-              <option value="Fuck Me">Fuck Me</option>
-              <option value="Sucking">Sucking</option>
-              <option value="Licking">Licking</option>
-              <option value="Imagining you naked">Imagining you naked</option>
-            </select>
-          </div>
-          <div id="partnerMoodDisplay" style="font-size:0.8rem; margin-top:8px; color:var(--rose);">Partner is setting mood...</div>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-title"><span>📝 Bucket List</span> <button onclick="addToBucketList()" style="background:none; border:none; color:var(--gold); cursor:pointer;">+</button></div>
-          <ul class="couple-list" id="bucketListUi"></ul>
-        </div>
-        <div class="sidebar-section">
-          <div class="sidebar-title"><span>🎵 Watch Room</span></div>
-          <div class="field" style="margin-bottom: 6px;">
-            <input type="text" id="sharedYoutubeUrl" placeholder="Enter Youtube URL" style="padding:6px; font-size:0.8rem;" />
-          </div>
-          <button class="btn gold small" onclick="setWatchRoomUrl()" style="width:100%;">Stream Video</button>
-          <div id="watchContainer" style="margin-top:8px;"></div>
-        </div>
+        <h3>Menu</h3>
+        <select id="myMoodSelect" onchange="updateMyMood(this.value)">
+          <option value="Normal">Normal</option>
+          <option value="Fucking Horny">Fucking Horny</option>
+        </select>
       </aside>
-
       <div class="app-wrap">
         <div class="topbar">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <button class="icon-btn" title="Toggle Sidebar Menu" onclick="toggleMainSidebar()" style="border-radius:8px; font-size:1.2rem; background:transparent;">☰</button>
-            <div class="profile-meta-block" onclick="openMySettings()">
-              <div class="avatar-container">
-                <img src="" id="myAvatarDisplay" class="avatar" alt="" onerror="window.handleAvatarError(this, 'Us')" />
-                <div id="presenceIndicator" class="status-dot"></div>
-              </div>
-              <div>
-                <h2 id="topBarTitle">👅 Our Wild World</h2>
-                <div class="who" id="whoLine" style="font-size: 0.8rem; color: var(--gold);">Setting up profile...</div>
-              </div>
-            </div>
+          <div class="profile-meta-block">
+            <img src="" id="myAvatarDisplay" class="avatar" onerror="window.handleAvatarError(this, 'User')" />
+            <h2 id="topBarTitle">👅 Our Wild World</h2>
           </div>
-          <div class="top-actions">
-            <button class="icon-btn" title="Voice Call" onclick="makePeerCall(false)">📞</button>
-            <button class="icon-btn" title="Video Call" onclick="makePeerCall(true)">🎥</button>
-            <button class="icon-btn" title="Logout" onclick="signOutSession()">⏻</button>
-          </div>
+          <button class="btn" style="width: auto;" onclick="signOutSession()">Logout</button>
         </div>
-
-        <div class="nav-tabs">
-          <div class="nav-tab active" id="tabChatBtn" onclick="switchTab('chat')">👅 Our Wild World</div>
-          <div class="nav-tab" id="tabTimelineBtn" onclick="switchTab('timeline')">💋 U & Me</div>
-        </div>
-
         <div id="panelChat" class="content-panel active">
           <div class="chat-area" id="chatArea"></div>
-          <div class="typing-indicator-bar" id="typingIndicatorField"></div>
-          
-          <div class="reply-hud" id="replyHud">
-            <span id="replyHudText" style="font-size:0.8rem; color:var(--muted);">Replying to...</span>
-            <button onclick="cancelMessageReply()" style="background:none; border:none; color:var(--danger); cursor:pointer;">✕</button>
-          </div>
-
           <div class="composer-wrapper">
-            <div class="voice-record-overlay" id="voiceRecordOverlay">
-              <div class="voice-pulse-indicator">🎙️ Recording Voice Note...</div>
-              <div style="display:flex; gap:10px;">
-                <button class="btn small danger" onclick="cancelVoiceRecording()">✕ Cancel</button>
-                <button class="btn small gold" style="background:#4fa885;" onclick="stopAndSendVoice()">⏹️ Send</button>
-              </div>
-            </div>
-
             <div class="composer">
-              <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" onchange="handleChatUpload(this)" />
-              <button class="icon-btn" onclick="document.getElementById('chatFileInput').click()">📎</button>
-              <button class="icon-btn" id="voiceRecBtn" onclick="toggleVoiceRecording()">🎙️</button>
-              <textarea id="chatInput" placeholder="Type a message..." rows="1" oninput="broadcastTypingStatus()"></textarea>
-              <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" id="sendBtn" onclick="sendTextMessage()">Send</button>
+              <textarea id="chatInput" placeholder="Type a message..."></textarea>
+              <button class="btn gold" id="sendBtn" onclick="sendTextMessage()">Send</button>
             </div>
           </div>
         </div>
-
-        <div id="panelTimeline" class="content-panel">
-          <div class="timeline-area">
-            <div class="timeline-composer">
-              <textarea id="postText" placeholder="Share something with your favorite person..." rows="3"></textarea>
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
-                <input type="file" id="postFileInput" accept="image/*" style="display:none;" onchange="handlePostFileSelected(this)" />
-                <button class="btn ghost small" id="postFileBtn" onclick="document.getElementById('postFileInput').click()">📸 Add Photo</button>
-                <button class="btn gold small" onclick="submitTimelinePost()">Publish</button>
-              </div>
-            </div>
-            <div id="timelineFeed"></div>
-          </div>
-        </div>
       </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="profileInspectModal">
-    <div class="profile-setup-card">
-      <h3 style="color: var(--gold); margin-top: 0; font-size: 1.4rem;">Partner Info Card</h3>
-      <div class="profile-details-grid">
-        <div class="profile-details-left">
-          <img id="inspectAvatar" src="" onerror="window.handleAvatarError(this, 'U')" />
-        </div>
-        <div class="profile-details-right">
-          <h2 id="inspectName" style="margin:0 0 8px; color:var(--rose);">Partner</h2>
-          <p><strong>DOB (Day/Month):</strong> <span id="inspectDob">Not Specified</span></p>
-          <p><strong>Fantasies / Kinks:</strong></p>
-          <p id="inspectNasty" style="font-style:italic; color:var(--muted);">No secrets unlocked yet...</p>
-        </div>
-      </div>
-      <button class="btn ghost" style="margin-top:20px;" onclick="document.getElementById('profileInspectModal').classList.remove('active')">Close</button>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="profileModal">
-    <div class="profile-setup-card">
-      <h3 style="color: var(--gold); margin-top: 0; font-size: 1.4rem;">Customize Portal & Settings</h3>
-      
-      <div class="field">
-        <label>Your Name</label>
-        <input type="text" id="editProfileName" />
-      </div>
-      
-      <div class="field">
-        <label>DOB (Day / Month Only - e.g. October 14)</label>
-        <input type="text" id="editProfileDob" placeholder="e.g. August 23" />
-      </div>
-
-      <div class="field">
-        <label>Nasty Secrets / Kinks</label>
-        <textarea id="editProfileNasty" rows="3" placeholder="Sucking, Spanking, Dominant, etc."></textarea>
-      </div>
-
-      <div class="field">
-        <label>Anniversary / Meet Date</label>
-        <input type="date" id="editAnniversary" onchange="saveAnniversary(this.value)" />
-      </div>
-
-      <div class="field">
-        <label>Theme Preset</label>
-        <select id="themeSelect" onchange="applyPortalTheme(this.value)">
-          <option value="midnight">Deep Midnight</option>
-          <option value="crimson">Crimson Rose</option>
-          <option value="gold">Forbidden Gold</option>
-        </select>
-      </div>
-
-      <div class="field">
-        <label>Accent Color Picker</label>
-        <input type="color" id="accentColorPicker" onchange="applyAccentColor(this.value)" />
-      </div>
-
-      <div class="field">
-        <label>Custom Chat Room Name</label>
-        <input type="text" id="customRoomNameInput" placeholder="Change Room Name" onchange="changeRoomName(this.value)" />
-      </div>
-
-      <div class="field">
-        <label>Profile Picture</label>
-        <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" onchange="handleAvatarFileSelected(this)" />
-        <button class="btn ghost text-center" id="avatarFileBtn" onclick="document.getElementById('avatarFileInput').click()">🖼️ Choose Photo from Gallery</button>
-        <div id="avatarUploadStatus" style="font-size:0.75rem; color:var(--success); margin-top:4px;"></div>
-      </div>
-
-      <div style="display: flex; gap: 10px; margin-top: 26px;">
-        <button class="btn ghost" onclick="closeProfileModal()">Cancel</button>
-        <button class="btn gold" onclick="saveProfileChanges()">Update Portal Info</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="incoming-banner" id="incomingBanner">
-    <span style="color:var(--gold); font-weight:600;" id="incomingCallLabel">Incoming Call...</span>
-    <button class="btn small gold" onclick="acceptIncomingCall()">Answer</button>
-    <button class="btn small danger" onclick="rejectIncomingCall()">Decline</button>
-  </div>
-
-  <div id="callOverlay">
-    <div class="timer-overlay" id="callTimer">00:00</div>
-    <div style="color:var(--gold); margin-bottom:14px; font-size:1.2rem;" id="callStatusMessage">Connecting Live Call Line...</div>
-    <div class="video-stage">
-      <video id="remoteVideo" autoplay playsinline></video>
-      <video id="localVideo" autoplay playsinline muted></video>
-    </div>
-    <div class="call-controls">
-      <button class="icon-btn" style="background:#555;" title="Switch Camera" onclick="switchVideoCamera()">🔄</button>
-      <button class="icon-btn" style="background:#444;" title="Screen Share" onclick="toggleScreenSharing()">🖥️</button>
-      <button class="icon-btn" style="background:#a68e38;" title="Reconnect Stream" onclick="reconnectActiveCall()">⚡</button>
-      <button class="icon-btn" style="background:var(--danger); width:60px; height:60px;" onclick="hangupActiveCall()">✖</button>
     </div>
   </div>
 
@@ -416,641 +83,59 @@
 
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
-    
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    let currentUser = null; 
-    let cachedProfiles = {};
-    let peer = null;
-    let currentCall = null;
-    let localStream = null;
-    let screenStream = null;
-    let mediaRecorder = null;
-    let audioChunks = [];
-    let isRecording = false;
-    let typingTimeout = null;
-    let broadcastChannel = null;
-    let selectedPostFile = null;
-    let uploadedAvatarUrl = null;
-    
-    let isEditingMsgId = null;
-    let replyingToMsgId = null;
-    let activeCameraFacing = "user";
-    let callInterval = null;
-    let callSeconds = 0;
-
-    // Fix module isolation scoping errors by mapping cleanly to window object
+    // Explicitly attach to window
     window.handleAvatarError = function(img, name) { 
       img.src = `https://ui-avatars.com/api/?background=241C3A&color=E8C170&name=${encodeURIComponent(name)}`; 
     };
 
-    window.toggleMainSidebar = function() {
-      document.getElementById('appSidebar').classList.toggle('open');
-    };
-
-    window.toggleAuthMode = function(toRegister) {
-      document.getElementById('loginForm').style.display = toRegister ? 'none' : 'block';
-      document.getElementById('registerForm').style.display = toRegister ? 'block' : 'none';
-    };
+    let currentUser = null;
+    let broadcastChannel = null;
 
     window.handleAuthentication = async function() {
-      const email = document.getElementById('authEmail').value.trim();
+      const email = document.getElementById('authEmail').value;
       const password = document.getElementById('authPassword').value;
       const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) { document.getElementById('authErr').textContent = error.message; return; }
-      checkSessionState(data.user);
+      if (error) return alert(error.message);
+      currentUser = data.user;
+      showScreen('appScreen');
+      setupRealtime();
     };
-
-    window.handleRegistration = async function() {
-      const name = document.getElementById('regName').value.trim();
-      const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
-      const { data, error } = await supabaseClient.auth.signUp({ email, password });
-      if(error) { alert(error.message); return; }
-      if(data.user) {
-        await supabaseClient.from('profiles').insert([{ id: data.user.id, name: name, status: 'approved' }]);
-        checkSessionState(data.user);
-      }
-    };
-
-    async function checkSessionState(user) {
-      if (!user) return;
-      currentUser = user;
-      const { data: profile } = await supabaseClient.from('profiles').select('*').eq('id', user.id).maybeSingle();
-      if (!profile || profile.status !== 'approved') { showScreen('pendingScreen'); return; }
-      initializePortal(profile);
-    }
-
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-      if (session && session.user) checkSessionState(session.user);
-      else showScreen('authScreen');
-    });
 
     function showScreen(id) {
       document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
       document.getElementById(id).classList.add('active');
     }
 
-    window.signOutSession = async function() {
-      if(peer) peer.destroy();
-      await supabaseClient.auth.signOut();
-      location.reload();
-    };
-
-    window.openMySettings = function() {
-      const myProfile = cachedProfiles[currentUser.id] || {};
-      document.getElementById('editProfileName').value = myProfile.name || '';
-      document.getElementById('editProfileDob').value = myProfile.dob || '';
-      document.getElementById('editProfileNasty').value = myProfile.nasty_details || '';
-      document.getElementById('avatarUploadStatus').textContent = "";
-      uploadedAvatarUrl = myProfile.avatar_url || null;
-      document.getElementById('profileModal').classList.add('active');
-    };
-    
-    window.closeProfileModal = function() { document.getElementById('profileModal').classList.remove('active'); };
-    
-    window.handleAvatarFileSelected = async function(inputElement) {
-      const file = inputElement.files[0];
-      if (!file) return;
-      document.getElementById('avatarUploadStatus').textContent = "Uploading Image...";
-      const uniqueName = `avatar-${currentUser.id}-${Date.now()}`;
-      
-      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
-      if(error) { document.getElementById('avatarUploadStatus').textContent = "Upload failed."; return; }
-      
-      const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-      uploadedAvatarUrl = urlData.publicUrl;
-      document.getElementById('avatarFileBtn').textContent = "✅ File Selected";
-      document.getElementById('avatarUploadStatus').textContent = "Avatar ready to save!";
-    };
-
-    window.saveProfileChanges = async function() {
-      const updatedName = document.getElementById('editProfileName').value.trim();
-      const dob = document.getElementById('editProfileDob').value.trim();
-      const nasty = document.getElementById('editProfileNasty').value;
-      if(!updatedName) return alert("Nickname field required");
-      
-      const { error } = await supabaseClient.from('profiles').update({
-        name: updatedName,
-        dob: dob,
-        nasty_details: nasty,
-        avatar_url: uploadedAvatarUrl
-      }).eq('id', currentUser.id);
-      
-      if(error) { alert("Error saving profile changes"); return; }
-      
-      closeProfileModal();
-      location.reload();
-    };
-
-    window.applyPortalTheme = function(themeClass) {
-      document.body.className = '';
-      document.body.classList.add(`theme-${themeClass}`);
-      localStorage.setItem('user-theme', themeClass);
-    };
-
-    window.applyAccentColor = function(colorHex) {
-      document.documentElement.style.setProperty('--gold', colorHex);
-      localStorage.setItem('user-accent', colorHex);
-    };
-
-    window.changeRoomName = function(roomName) {
-      if(!roomName) return;
-      document.getElementById('topBarTitle').textContent = roomName;
-      localStorage.setItem('custom-room-title', roomName);
-    };
-
-    window.inspectPartnerProfile = function(partnerId) {
-      const profile = cachedProfiles[partnerId] || { name: 'Partner' };
-      document.getElementById('inspectAvatar').src = profile.avatar_url || '';
-      window.handleAvatarError(document.getElementById('inspectAvatar'), profile.name);
-      document.getElementById('inspectName').textContent = profile.name;
-      document.getElementById('inspectDob').textContent = profile.dob || "Unknown Secrets";
-      document.getElementById('inspectNasty').textContent = profile.nasty_details || "No dirty details declared yet...";
-      document.getElementById('profileInspectModal').classList.add('active');
-    };
-
-    window.switchTab = function(target) {
-      document.querySelectorAll('.content-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      if(target === 'chat') {
-        document.getElementById('panelChat').classList.add('active');
-        document.getElementById('tabChatBtn').classList.add('active');
-        markAllAsRead();
-      } else {
-        document.getElementById('panelTimeline').classList.add('active');
-        document.getElementById('tabTimelineBtn').classList.add('active');
-      }
-    };
-
-    async function initializePortal(myProfile) {
-      const savedTheme = localStorage.getItem('user-theme') || 'midnight';
-      applyPortalTheme(savedTheme);
-      document.getElementById('themeSelect').value = savedTheme;
-
-      const savedAccent = localStorage.getItem('user-accent');
-      if(savedAccent) {
-        applyAccentColor(savedAccent);
-        document.getElementById('accentColorPicker').value = savedAccent;
-      }
-
-      const savedRoomName = localStorage.getItem('custom-room-title');
-      if(savedRoomName) changeRoomName(savedRoomName);
-
-      document.getElementById('whoLine').textContent = `Logged in: ${myProfile.name}`;
-      document.getElementById('myAvatarDisplay').src = myProfile.avatar_url || '';
-      window.handleAvatarError(document.getElementById('myAvatarDisplay'), myProfile.name);
-      showScreen('appScreen');
-
-      const { data: profiles } = await supabaseClient.from('profiles').select('*');
-      if(profiles) profiles.forEach(p => cachedProfiles[p.id] = p);
-
-      const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
-      peer = new Peer(sanitizedPeerId, {
-        host: '0.peerjs.com', port: 443, path: '/', secure: true,
-        config: { iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]}
-      });
-
-      peer.on('call', (incomingCall) => {
-        currentCall = incomingCall;
-        document.getElementById('incomingCallLabel').textContent = currentCall.options.metadata?.wantsVideo ? "📽️ Incoming Video Call" : "📞 Incoming Voice Call";
-        document.getElementById('incomingBanner').classList.add('active');
-      });
-
-      fetchChatHistory();
-      fetchTimelinePosts();
-      setupPresenceAndBroadcasts(myProfile.name);
-      loadAnniversary();
-      loadBucketList();
-    }
-
-    function startCallTimer() {
-      callSeconds = 0;
-      clearInterval(callInterval);
-      callInterval = setInterval(() => {
-        callSeconds++;
-        const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
-        const secs = String(callSeconds % 60).padStart(2, '0');
-        document.getElementById('callTimer').textContent = `${mins}:${secs}`;
-      }, 1000);
-    }
-
-    window.makePeerCall = async function(wantsVideo) {
-      document.getElementById('callOverlay').classList.add('active');
-      document.getElementById('callStatusMessage').textContent = "Ringing partner line...";
-      
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
-        document.getElementById('localVideo').srcObject = localStream;
-        
-        const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
-        if(!partnerId) return;
-        const sanitizedPartnerId = partnerId.replace(/[^a-zA-Z0-9]/g, '');
-        
-        currentCall = peer.call(sanitizedPartnerId, localStream, { metadata: { wantsVideo } });
-        startCallTimer();
-        
-        currentCall.on('stream', rStream => {
-          document.getElementById('callStatusMessage').textContent = "Line Active";
-          document.getElementById('remoteVideo').srcObject = rStream;
-        });
-      } catch (err) {
-        alert("Unable to fetch media tracks. Check permission access policies.");
-      }
-    };
-
-    window.acceptIncomingCall = async function() {
-      document.getElementById('incomingBanner').classList.remove('active');
-      document.getElementById('callOverlay').classList.add('active');
-      document.getElementById('callStatusMessage').textContent = "Connecting Secure Stream...";
-      
-      const wantsVideo = currentCall.options.metadata?.wantsVideo || false;
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: wantsVideo });
-        document.getElementById('localVideo').srcObject = localStream;
-        currentCall.answer(localStream);
-        startCallTimer();
-        
-        currentCall.on('stream', rStream => {
-          document.getElementById('callStatusMessage').textContent = "Line Active";
-          document.getElementById('remoteVideo').srcObject = rStream;
-        });
-      } catch(err) {
-        alert("Failed to access camera/mic line.");
-      }
-    };
-
-    window.switchVideoCamera = async function() {
-      if(!localStream) return;
-      const videoTrack = localStream.getVideoTracks()[0];
-      if(!videoTrack) return;
-      
-      activeCameraFacing = (activeCameraFacing === "user") ? "environment" : "user";
-      videoTrack.stop();
-      
-      const newVideo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: activeCameraFacing } });
-      const newTrack = newVideo.getVideoTracks()[0];
-      localStream.addTrack(newTrack);
-      document.getElementById('localVideo').srcObject = localStream;
-    };
-
-    window.toggleScreenSharing = async function() {
-      try {
-        if(!screenStream) {
-          screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-          const videoTrack = screenStream.getVideoTracks()[0];
-          const sender = currentCall.peerConnection.getSenders().find(s => s.track.kind === 'video');
-          if(sender) sender.replaceTrack(videoTrack);
-        } else {
-          screenStream.getTracks().forEach(t => t.stop());
-          screenStream = null;
-          reconnectActiveCall();
-        }
-      } catch(err) {
-        console.warn("Screen share canceled or unapproved.");
-      }
-    };
-
-    window.reconnectActiveCall = function() {
-      hangupActiveCall();
-      alert("Reconnecting Line...");
-      makePeerCall(true);
-    };
-
-    window.rejectIncomingCall = function() { document.getElementById('incomingBanner').classList.remove('active'); if(currentCall) currentCall.close(); };
-    
-    window.hangupActiveCall = function() {
-      document.getElementById('callOverlay').classList.remove('active');
-      clearInterval(callInterval);
-      if(currentCall) currentCall.close();
-      if(localStream) localStream.getTracks().forEach(t=>t.stop());
-      if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
-    };
-
-    async function fetchChatHistory() {
-      let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-      if (response.data) {
-        const chatArea = document.getElementById('chatArea');
-        chatArea.innerHTML = '';
-        response.data.forEach(msg => renderMessageBubble(msg));
-        chatArea.scrollTop = chatArea.scrollHeight;
-      }
-    }
-
-    function renderMessageBubble(msg) {
-      if(document.getElementById(`msg-${msg.id}`)) return;
-      const chatArea = document.getElementById('chatArea');
-      const isMe = msg.sender_uid === currentUser.id;
-      const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
-      
-      const row = document.createElement('div');
-      row.id = `msg-${msg.id}`;
-      row.className = `msg-row ${isMe ? 'mine' : 'theirs'}`;
-      
-      let mediaMarkup = '';
-      if (msg.media_url) {
-        if (msg.media_type === 'image') mediaMarkup = `<img src="${msg.media_url}" />`;
-        else if (msg.media_type === 'video') mediaMarkup = `<video src="${msg.media_url}" style="max-width:100%;" controls></video>`;
-        else if (msg.media_type === 'audio') mediaMarkup = `<audio src="${msg.media_url}" controls></audio>`;
-      }
-
-      let replyMarkup = msg.reply_to_text ? `<div style="font-size:0.75rem; background:rgba(0,0,0,0.1); border-left:2px solid var(--gold); padding:4px; margin-bottom:4px;">${msg.reply_to_text}</div>` : '';
-
-      let tickMarkup = '';
-      if(isMe) {
-        const tickColor = msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);';
-        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${msg.is_read ? '✓✓' : '✓'}</span>`;
-      }
-
-      const avatarSrc = profile.avatar_url || '';
-
-      row.innerHTML = `
-        <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" onclick="inspectPartnerProfile('${msg.sender_uid}')" />
-        <div class="msg-content-block">
-          <span class="sender-label">${profile.name}</span>
-          <div class="msg">
-            <div class="msg-actions">
-              <button class="msg-action-btn" onclick="setMessageReply('${msg.id}', '${msg.text || 'Media Message'}')">Reply</button>
-              ${isMe ? `<button class="msg-action-btn" onclick="editYourMessage('${msg.id}', '${msg.text || ''}')">Edit</button>` : ''}
-            </div>
-            ${replyMarkup}
-            <div id="text-node-${msg.id}">${msg.text ? `<div>${msg.text}</div>` : ''}</div>
-            ${mediaMarkup}
-            <div class="msg-meta-line">
-              ${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-              ${tickMarkup}
-            </div>
-          </div>
-        </div>
-      `;
-      chatArea.appendChild(row);
-      window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
-      chatArea.scrollTop = chatArea.scrollHeight;
-    }
-
-    window.setMessageReply = function(id, partialText) {
-      replyingToMsgId = id;
-      const hud = document.getElementById('replyHud');
-      document.getElementById('replyHudText').textContent = `Replying to: "${partialText}"`;
-      hud.classList.add('active');
-    };
-
-    window.cancelMessageReply = function() {
-      replyingToMsgId = null;
-      document.getElementById('replyHud').classList.remove('active');
-    };
-
-    window.editYourMessage = function(id, oldText) {
-      isEditingMsgId = id;
-      document.getElementById('chatInput').value = oldText;
-      document.getElementById('sendBtn').textContent = "Update";
-    };
-
-    window.sendTextMessage = async function() {
-      const input = document.getElementById('chatInput');
-      const txt = input.value.trim();
-      if(!txt) return;
-      input.value = '';
-
-      if(isEditingMsgId) {
-        await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
-        document.getElementById(`text-node-${isEditingMsgId}`).innerHTML = `<div>${txt}</div>`;
-        isEditingMsgId = null;
-        document.getElementById('sendBtn').textContent = "Send";
-        return;
-      }
-
-      let replyData = null;
-      if(replyingToMsgId) {
-        replyData = document.getElementById('replyHudText').textContent;
-        cancelMessageReply();
-      }
-
-      await supabaseClient.from('messages').insert([{ 
-        sender_uid: currentUser.id, 
-        text: txt, 
-        is_read: false,
-        reply_to_text: replyData
-      }]);
-    };
-
-    async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
-    async function markAllAsRead() { if(currentUser) await supabaseClient.from('messages').update({ is_read: true }).not('sender_uid', 'eq', currentUser.id).eq('is_read', false); }
-
-    window.handleChatUpload = async function(inputElement) {
-      const file = inputElement.files[0]; if (!file) return;
-      const uniqueName = `${Date.now()}-${file.name}`;
-      const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
-      if (error) return;
-      const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-      let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
-    };
-
-    window.toggleVoiceRecording = function() {
-      if (!isRecording) {
-        navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-          mediaRecorder = new MediaRecorder(stream);
-          audioChunks = [];
-          mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-          mediaRecorder.start();
-          isRecording = true;
-          document.getElementById('voiceRecordOverlay').classList.add('active');
-        }).catch(err => alert("Microphone hardware access denied. Check system privacy options."));
-      }
-    };
-
-    window.cancelVoiceRecording = function() {
-      if(mediaRecorder) { mediaRecorder.stop(); isRecording = false; }
-      document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
-
-    window.stopAndSendVoice = function() {
-      if(mediaRecorder) {
-        mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-          const file = new File([audioBlob], "voice.webm");
-          const uniqueName = `${Date.now()}-voice.webm`;
-          await supabaseClient.storage.from('media').upload(uniqueName, file);
-          const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
-        };
-        mediaRecorder.stop();
-        isRecording = false;
-      }
-      document.getElementById('voiceRecordOverlay').classList.remove('active');
-    };
-
-    window.updateMyMood = async function(mood) {
-      if(broadcastChannel) {
-        broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood } });
-      }
-      localStorage.setItem('my-mood', mood);
-    };
-
-    function setupPresenceAndBroadcasts(username) {
+    function setupRealtime() {
       broadcastChannel = supabaseClient.channel('room-communications', { config: { presence: { key: currentUser.id } } });
       
-      // FIX: Setup channels BEFORE chaining `.subscribe()` execution blocks
+      // Chaining all listeners BEFORE subscribe()
       broadcastChannel
-        .on('presence', { event: 'sync' }, () => {
-          const state = broadcastChannel.presenceState();
-          const partnerId = Object.keys(cachedProfiles).find(id => id !== currentUser.id);
-          const dot = document.getElementById('presenceIndicator');
-          if(partnerId && state[partnerId]) dot.classList.add('online');
-          else dot.classList.remove('online');
-        })
-        .on('broadcast', { event: 'typing' }, payload => {
-          const indicator = document.getElementById('typingIndicatorField');
-          indicator.textContent = payload.payload.isTyping ? `${payload.payload.name} is typing...` : '';
-        })
-        .on('broadcast', { event: 'mood' }, payload => {
-          if(payload.payload.uid !== currentUser.id) {
-            document.getElementById('partnerMoodDisplay').textContent = `Partner: ${payload.payload.mood}`;
-          }
-        })
-        .on('broadcast', { event: 'watch' }, payload => {
-          applyWatchRoomVideo(payload.payload.url);
-        });
-
-      broadcastChannel.subscribe(async (status) => {
-        if (status === 'SUBSCRIBED') {
-          await broadcastChannel.track({ name: username, online_at: new Date().toISOString() });
-          const myMood = localStorage.getItem('my-mood') || 'Normal';
-          document.getElementById('myMoodSelect').value = myMood;
-          broadcastChannel.send({ type: 'broadcast', event: 'mood', payload: { uid: currentUser.id, mood: myMood } });
-        }
-      });
-
-      supabaseClient.channel('table-changes')
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
-          renderMessageBubble(payload.new); 
-          if(payload.new.sender_uid !== currentUser.id) markAsRead(payload.new.id);
+          renderMessage(payload.new); 
         })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
+        .on('broadcast', { event: 'typing' }, () => {})
         .subscribe();
     }
 
-    window.broadcastTypingStatus = function() {
-      if(!broadcastChannel) return;
-      broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { name: cachedProfiles[currentUser.id]?.name || 'Partner', isTyping: true } });
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        broadcastChannel.send({ type: 'broadcast', event: 'typing', payload: { isTyping: false } });
-      }, 2000);
+    window.sendTextMessage = async function() {
+      const txt = document.getElementById('chatInput').value;
+      if(!txt) return;
+      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt }]);
+      document.getElementById('chatInput').value = '';
     };
 
-    window.setWatchRoomUrl = function() {
-      const url = document.getElementById('sharedYoutubeUrl').value.trim();
-      if(!url) return;
-      applyWatchRoomVideo(url);
-      if(broadcastChannel) {
-        broadcastChannel.send({ type: 'broadcast', event: 'watch', payload: { url } });
-      }
-    };
-
-    function applyWatchRoomVideo(url) {
-      let regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      let match = url.match(regExp);
-      if (match && match[2].length == 11) {
-        const embedUrl = `https://www.youtube.com/embed/${match[2]}`;
-        document.getElementById('watchContainer').innerHTML = `<iframe width="100%" height="150" src="${embedUrl}" frameborder="0" allowfullscreen></iframe>`;
-      }
+    function renderMessage(msg) {
+      const chatArea = document.getElementById('chatArea');
+      const div = document.createElement('div');
+      div.className = `msg-row ${msg.sender_uid === currentUser.id ? 'mine' : 'theirs'}`;
+      div.innerHTML = `<div class="msg">${msg.text}</div>`;
+      chatArea.appendChild(div);
     }
 
-    window.saveAnniversary = function(val) {
-      localStorage.setItem('anniversary-date', val);
-      calculateAnniversary(val);
-    };
-
-    function loadAnniversary() {
-      const val = localStorage.getItem('anniversary-date') || "2024-01-01";
-      document.getElementById('editAnniversary').value = val;
-      calculateAnniversary(val);
-    }
-
-    function calculateAnniversary(dateStr) {
-      const ann = new Date(dateStr);
-      const diff = Date.now() - ann.getTime();
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
-    }
-
-    window.addToBucketList = function() {
-      const item = prompt("Add a wild goal to our Bucket List:");
-      if(!item) return;
-      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
-      list.push(item);
-      localStorage.setItem('couple-bucket', JSON.stringify(list));
-      renderBucketList();
-    };
-
-    function loadBucketList() { renderBucketList(); }
-    
-    function renderBucketList() {
-      const list = JSON.parse(localStorage.getItem('couple-bucket') || '["Explore Tokyo", "Midnight skinny dip"]');
-      const container = document.getElementById('bucketListUi');
-      container.innerHTML = '';
-      list.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>🔥 ${item}</span><span style="color:var(--danger); cursor:pointer;" onclick="deleteBucket(${index})">✕</span>`;
-        container.appendChild(li);
-      });
-    }
-
-    window.deleteBucket = function(index) {
-      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
-      list.splice(index, 1);
-      localStorage.setItem('couple-bucket', JSON.stringify(list));
-      renderBucketList();
-    };
-
-    async function fetchTimelinePosts() {
-      const { data } = await supabaseClient.from('posts').select('*').order('created_at', { ascending: false });
-      if (data) {
-        const feed = document.getElementById('timelineFeed'); feed.innerHTML = '';
-        data.forEach(post => {
-          const profile = cachedProfiles[post.sender_uid] || { name: 'Partner' };
-          const card = document.createElement('div'); card.className = 'post-card';
-          const avatarSrc = profile.avatar_url || '';
-          card.innerHTML = `
-            <div class="post-header">
-              <img src="${avatarSrc}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" />
-              <div>
-                <div class="post-author">${profile.name}</div>
-                <div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div>
-              </div>
-            </div>
-            <div class="post-body">${post.text || ''}</div>
-            ${post.media_url ? `<img src="${post.media_url}" class="post-img" />` : ''}
-          `;
-          feed.appendChild(card);
-          window.handleAvatarError(document.getElementById(`post-av-${post.id}`), profile.name);
-        });
-      }
-    }
-
-    window.handlePostFileSelected = function(el) {
-      selectedPostFile = el.files[0];
-      if(selectedPostFile) document.getElementById('postFileBtn').textContent = "✅ File Selected";
-    };
-
-    window.submitTimelinePost = async function() {
-      const textInput = document.getElementById('postText'); const text = textInput.value.trim();
-      if(!text && !selectedPostFile) return;
-      let mediaUrl = null;
-      if(selectedPostFile) {
-        const uniqueName = `${Date.now()}-${selectedPostFile.name}`;
-        await supabaseClient.storage.from('media').upload(uniqueName, selectedPostFile);
-        const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-        mediaUrl = data.publicUrl;
-      }
-      await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl }]);
-      textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo";
-    };
+    window.signOutSession = async () => { await supabaseClient.auth.signOut(); location.reload(); };
   </script>
 </body>
 </html>
