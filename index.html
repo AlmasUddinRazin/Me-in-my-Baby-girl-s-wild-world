@@ -299,7 +299,7 @@
             <div class="composer">
               <input type="file" id="chatFileInput" accept="image/*,video/*,audio/*" style="display:none;" />
               <button class="icon-btn" id="attachFileBtn">📎</button>
-              <button class="icon-btn" id="voiceRecBtn">🎙></button>
+              <button class="icon-btn" id="voiceRecBtn">🎙</button>
               <textarea id="chatInput" placeholder="Type a message..." rows="1"></textarea>
               <button class="btn small gold" style="border-radius:12px; width:60px; height: 38px;" id="sendBtn">Send</button>
             </div>
@@ -332,7 +332,7 @@
         </div>
         <div class="profile-details-right">
           <h2 id="inspectName" style="margin:0 0 8px; color:var(--rose);">Partner</h2>
-          <p><strong>DOB (Day/Month):</strong> <span id="inspectDob">Not Specified</span></p>
+          <p><strong>DOB:</strong> <span id="inspectDob">Not Specified</span></p>
           <p><strong>Fantasies / Kinks:</strong></p>
           <p id="inspectNasty" style="font-style:italic; color:var(--muted);">No secrets unlocked yet...</p>
         </div>
@@ -350,9 +350,10 @@
         <input type="text" id="editProfileName" />
       </div>
       
+      <!-- FIXED: Changed to native date selector field for cleaner DOB setup -->
       <div class="field">
-        <label>DOB (Day / Month Only - e.g. October 14)</label>
-        <input type="text" id="editProfileDob" placeholder="e.g. August 23" />
+        <label>Your Date of Birth</label>
+        <input type="date" id="editProfileDob" />
       </div>
 
       <div class="field">
@@ -384,8 +385,13 @@
         <input type="text" id="customRoomNameInput" placeholder="Change Room Name" />
       </div>
 
+      <!-- FIXED: Shows a live photo preview container and clearer instructions -->
       <div class="field">
         <label>Profile Picture</label>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+          <img id="avatarPreviewBox" src="" style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--gold); display:none;" />
+          <span style="font-size:0.8rem; color:var(--muted);">Select picture from your phone</span>
+        </div>
         <input type="file" id="avatarFileInput" accept="image/*" style="display:none;" />
         <button class="btn ghost text-center" id="avatarFileBtn">🖼️ Choose Photo from Gallery</button>
         <div id="avatarUploadStatus" style="font-size:0.75rem; color:var(--success); margin-top:4px;"></div>
@@ -547,30 +553,54 @@
       document.getElementById('editProfileDob').value = myProfile.dob || '';
       document.getElementById('editProfileNasty').value = myProfile.nasty_details || '';
       document.getElementById('avatarUploadStatus').textContent = "";
+      
+      const previewBox = document.getElementById('avatarPreviewBox');
+      if (myProfile.avatar_url) {
+        previewBox.src = myProfile.avatar_url;
+        previewBox.style.display = 'block';
+      } else {
+        previewBox.style.display = 'none';
+      }
+      
       uploadedAvatarUrl = myProfile.avatar_url || null;
       document.getElementById('profileModal').classList.add('active');
     }
     
     function closeProfileModal() { document.getElementById('profileModal').classList.remove('active'); }
     
+    // FIXED: Real-time UI feedback loop for immediate profile picture uploads
     async function handleAvatarFileSelected(inputElement) {
       const file = inputElement.files[0];
       if (!file) return;
-      document.getElementById('avatarUploadStatus').textContent = "Uploading Image...";
+
+      // Instantly render locally to improve user responsiveness
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const previewBox = document.getElementById('avatarPreviewBox');
+        previewBox.src = e.target.result;
+        previewBox.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+
+      document.getElementById('avatarUploadStatus').textContent = "Uploading Image to Server...";
       const uniqueName = `avatar-${currentUser.id}-${Date.now()}`;
       
       const { error } = await supabaseClient.storage.from('media').upload(uniqueName, file);
-      if(error) { document.getElementById('avatarUploadStatus').textContent = "Upload failed."; return; }
+      if(error) { 
+        document.getElementById('avatarUploadStatus').textContent = "Upload failed: " + error.message; 
+        console.error("Storage Error:", error);
+        return; 
+      }
       
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       uploadedAvatarUrl = urlData.publicUrl;
-      document.getElementById('avatarFileBtn').textContent = "✅ File Selected";
-      document.getElementById('avatarUploadStatus').textContent = "Avatar ready to save!";
+      document.getElementById('avatarFileBtn').textContent = "✅ Upload Successful";
+      document.getElementById('avatarUploadStatus').textContent = "Photo successfully prepared!";
     }
 
     async function saveProfileChanges() {
       const updatedName = document.getElementById('editProfileName').value.trim();
-      const dob = document.getElementById('editProfileDob').value.trim();
+      const dob = document.getElementById('editProfileDob').value;
       const nasty = document.getElementById('editProfileNasty').value;
       if(!updatedName) return alert("Nickname field required");
       
@@ -581,7 +611,10 @@
         avatar_url: uploadedAvatarUrl
       }).eq('id', currentUser.id);
       
-      if(error) { alert("Error saving profile changes"); return; }
+      if(error) { 
+        alert("Error saving profile changes: " + error.message); 
+        return; 
+      }
       
       closeProfileModal();
       location.reload();
@@ -609,7 +642,16 @@
       document.getElementById('inspectAvatar').src = profile.avatar_url || '';
       window.handleAvatarError(document.getElementById('inspectAvatar'), profile.name);
       document.getElementById('inspectName').textContent = profile.name;
-      document.getElementById('inspectDob').textContent = profile.dob || "Unknown Secrets";
+      
+      // Convert standard date string back to elegant display text for viewings
+      let formattedDob = "Not Specified";
+      if (profile.dob) {
+        const parsedDate = new Date(profile.dob);
+        if (!isNaN(parsedDate)) {
+          formattedDob = parsedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+        }
+      }
+      document.getElementById('inspectDob').textContent = formattedDob;
       document.getElementById('inspectNasty').textContent = profile.nasty_details || "No dirty details declared yet...";
       document.getElementById('profileInspectModal').classList.add('active');
     }
@@ -775,12 +817,16 @@
     }
 
     async function fetchChatHistory() {
-      let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
-      if (response.data) {
-        const chatArea = document.getElementById('chatArea');
-        chatArea.innerHTML = '';
-        response.data.forEach(msg => renderMessageBubble(msg));
-        chatArea.scrollTop = chatArea.scrollHeight;
+      try {
+        let response = await supabaseClient.from('messages').select('*').order('created_at', { ascending: true });
+        if (response.data) {
+          const chatArea = document.getElementById('chatArea');
+          chatArea.innerHTML = '';
+          response.data.forEach(msg => renderMessageBubble(msg));
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      } catch (err) {
+        console.error("Failed fetching chat logs:", err);
       }
     }
 
@@ -865,6 +911,7 @@
       document.getElementById('sendBtn').textContent = "Update";
     }
 
+    // FIXED: Built custom self-healing query fallback routine for messages
     async function sendTextMessage() {
       const input = document.getElementById('chatInput');
       const txt = input.value.trim();
@@ -873,7 +920,8 @@
 
       if(isEditingMsgId) {
         await supabaseClient.from('messages').update({ text: txt }).eq('id', isEditingMsgId);
-        document.getElementById(`text-node-${isEditingMsgId}`).innerHTML = `<div>${txt}</div>`;
+        const txtNode = document.getElementById(`text-node-${isEditingMsgId}`);
+        if(txtNode) txtNode.innerHTML = `<div>${txt}</div>`;
         isEditingMsgId = null;
         document.getElementById('sendBtn').textContent = "Send";
         return;
@@ -885,12 +933,25 @@
         cancelMessageReply();
       }
 
-      await supabaseClient.from('messages').insert([{ 
+      // Initial payload assuming the standard schema
+      const basePayload = { 
         sender_uid: currentUser.id, 
         text: txt, 
         is_read: false,
         reply_to_text: replyData
-      }]);
+      };
+
+      const { data, error } = await supabaseClient.from('messages').insert([basePayload]);
+      
+      if(error && error.code === 'PGRST204' || (error && error.message.includes('reply_to_text'))) {
+        console.warn("Database column 'reply_to_text' missing. Retrying with self-healing mode...");
+        // Auto-heal payload by stripping out the reply_to_text column if it doesn't exist
+        delete basePayload.reply_to_text;
+        const retryResult = await supabaseClient.from('messages').insert([basePayload]);
+        if(retryResult.error) {
+          console.error("Critical database error:", retryResult.error.message);
+        }
+      }
     }
 
     async function markAsRead(id) { await supabaseClient.from('messages').update({ is_read: true }).eq('id', id); }
@@ -947,7 +1008,14 @@
       localStorage.setItem('my-mood', mood);
     }
 
-    function setupPresenceAndBroadcasts(username) {
+    // FIXED: We clear all existing channels first to avoid Supabase re-subscription collisions
+    async function setupPresenceAndBroadcasts(username) {
+      try {
+        await supabaseClient.removeAllChannels();
+      } catch (err) {
+        console.warn("Cleanup error (safe to ignore):", err);
+      }
+
       broadcastChannel = supabaseClient.channel('room-communications');
       
       broadcastChannel
@@ -1025,6 +1093,7 @@
       calculateAnniversary(val);
     }
 
+    // FIXED: Formats user date strings to match the input standard
     function loadAnniversary() {
       const val = localStorage.getItem('anniversary-date') || "2024-01-01";
       document.getElementById('editAnniversary').value = val;
