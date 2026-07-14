@@ -580,7 +580,7 @@
       document.getElementById('editProfileNasty').value = myProfile.nasty_details || '';
       document.getElementById('avatarUploadStatus').textContent = "";
       
-      uploadedAvatarUrl = myProfile.avatar_url || '';
+      uploadedAvatarUrl = myProfile.avatar_url || myProfile.avatar || myProfile.profile_pic || '';
       const previewBox = document.getElementById('avatarPreviewBox');
       if (uploadedAvatarUrl) {
         previewBox.src = uploadedAvatarUrl;
@@ -615,9 +615,16 @@
       const nasty = document.getElementById('editProfileNasty').value;
       if(!updatedName) return alert("Nickname field required");
       
-      const updateData = { name: updatedName, dob: dob, nasty_details: nasty, avatar_url: uploadedAvatarUrl };
-      const { error } = await supabaseClient.from('profiles').update(updateData).eq(detectedProfileIdKey, currentUser.id);
+      const updateData = { 
+        name: updatedName, 
+        dob: dob, 
+        nasty_details: nasty, 
+        avatar_url: uploadedAvatarUrl,
+        avatar: uploadedAvatarUrl,
+        profile_pic: uploadedAvatarUrl
+      };
       
+      const { error } = await supabaseClient.from('profiles').update(updateData).eq(detectedProfileIdKey, currentUser.id);
       if(error) { alert("Error saving fields: " + error.message); return; }
       
       cachedProfiles[currentUser.id] = { ...cachedProfiles[currentUser.id], ...updateData };
@@ -649,7 +656,7 @@
       const profile = cachedProfiles[targetUid] || { name: 'Partner' };
       
       const inspectBox = document.getElementById('inspectAvatar');
-      inspectBox.src = profile.avatar_url || '';
+      inspectBox.src = profile.avatar_url || profile.avatar || profile.profile_pic || '';
       window.handleAvatarError(inspectBox, profile.name);
       
       document.getElementById('inspectName').textContent = profile.name;
@@ -683,13 +690,19 @@
       const { data: profiles } = await supabaseClient.from('profiles').select('*');
       if(profiles) {
         profiles.forEach(p => {
-          const matchedUid = (p.id === MY_UID || p.uid === MY_UID || p.user_id === MY_UID) ? MY_UID : HER_UID;
-          cachedProfiles[matchedUid] = p;
+          const rawIds = [p.id, p.uid, p.user_id].filter(Boolean);
+          rawIds.forEach(id => {
+            cachedProfiles[id] = p;
+          });
+          const isMe = rawIds.some(id => id === MY_UID);
+          const isHer = rawIds.some(id => id === HER_UID);
+          if (isMe) cachedProfiles[MY_UID] = p;
+          if (isHer) cachedProfiles[HER_UID] = p;
         });
       }
       const myProfile = cachedProfiles[currentUser.id] || {};
       const barAvatar = document.getElementById('myAvatarDisplay');
-      barAvatar.src = myProfile.avatar_url || '';
+      barAvatar.src = myProfile.avatar_url || myProfile.avatar || myProfile.profile_pic || '';
       window.handleAvatarError(barAvatar, myProfile.name);
     }
 
@@ -818,7 +831,6 @@
     function renderMessageBubble(msg) {
       const chatArea = document.getElementById('chatArea');
       
-      // FIX BOTH COLUMN OVERLAYS: Checks both variant styles sent from old/new tables
       const matchedSenderField = msg.sender_uid || msg.sender_id || '';
       const computedSenderUid = (matchedSenderField === MY_UID) ? MY_UID : HER_UID;
       const isMe = computedSenderUid === currentUser.id;
@@ -838,7 +850,7 @@
 
       let replyMarkup = msg.reply_to_text ? `<div style="font-size:0.75rem; background:rgba(0,0,0,0.1); border-left:2px solid var(--gold); padding:4px; margin-bottom:4px;">${msg.reply_to_text}</div>` : '';
       let tickMarkup = isMe ? `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);'}">${msg.is_read ? '✓✓' : '✓'}</span>` : '';
-      const avatarSrc = profile.avatar_url || '';
+      const avatarSrc = profile.avatar_url || profile.avatar || profile.profile_pic || '';
 
       row.innerHTML = `
         <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" />
@@ -942,7 +954,13 @@
       let replyData = replyingToMsgId ? document.getElementById('replyHudText').textContent : null;
       cancelMessageReply();
 
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, text: txt, is_read: false, reply_to_text: replyData }]);
+      await supabaseClient.from('messages').insert([{ 
+        sender_uid: currentUser.id, 
+        sender_id: currentUser.id, 
+        text: txt, 
+        is_read: false, 
+        reply_to_text: replyData 
+      }]);
       fetchChatHistory();
     }
 
@@ -954,7 +972,13 @@
       await supabaseClient.storage.from('media').upload(uniqueName, file);
       const { data: urlData } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
       let mediaType = file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'image';
-      await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: urlData.publicUrl, media_type: mediaType, is_read: false }]);
+      await supabaseClient.from('messages').insert([{ 
+        sender_uid: currentUser.id, 
+        sender_id: currentUser.id, 
+        media_url: urlData.publicUrl, 
+        media_type: mediaType, 
+        is_read: false 
+      }]);
       fetchChatHistory();
     }
 
@@ -981,7 +1005,13 @@
           const uniqueName = `${Date.now()}-voice.webm`;
           await supabaseClient.storage.from('media').upload(uniqueName, new File([audioBlob], "voice.webm"));
           const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
-          await supabaseClient.from('messages').insert([{ sender_uid: currentUser.id, media_url: data.publicUrl, media_type: 'audio', is_read: false }]);
+          await supabaseClient.from('messages').insert([{ 
+            sender_uid: currentUser.id, 
+            sender_id: currentUser.id, 
+            media_url: data.publicUrl, 
+            media_type: 'audio', 
+            is_read: false 
+          }]);
           fetchChatHistory();
         };
         mediaRecorder.stop(); isRecording = false;
@@ -1095,9 +1125,11 @@
           let reactionList = post.reactions || [];
           let loveCount = reactionList.filter(r => r.emoji === "❤️").length;
 
+          const avatarSrc = profile.avatar_url || profile.avatar || profile.profile_pic || '';
+
           card.innerHTML = `
             <div class="post-header">
-              <img src="${profile.avatar_url || ''}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" onerror="window.handleAvatarError(this, '${profile.name}')" />
+              <img src="${avatarSrc}" id="post-av-${post.id}" style="width:30px; height:30px; border-radius:50%; object-fit:cover;" onerror="window.handleAvatarError(this, '${profile.name}')" />
               <div><div class="post-author">${profile.name}</div><div class="post-time">${new Date(post.created_at).toLocaleDateString()}</div></div>
             </div>
             <div class="post-body">${post.text || ''}</div>
@@ -1126,7 +1158,13 @@
         const { data } = supabaseClient.storage.from('media').getPublicUrl(uniqueName);
         mediaUrl = data.publicUrl;
       }
-      await supabaseClient.from('posts').insert([{ sender_uid: currentUser.id, text: text, media_url: mediaUrl, reactions: [] }]);
+      await supabaseClient.from('posts').insert([{ 
+        sender_uid: currentUser.id, 
+        sender_id: currentUser.id, 
+        text: text, 
+        media_url: mediaUrl, 
+        reactions: [] 
+      }]);
       textInput.value = ''; selectedPostFile = null; document.getElementById('postFileBtn').textContent = "📸 Add Photo"; fetchTimelinePosts();
     }
   </script>
