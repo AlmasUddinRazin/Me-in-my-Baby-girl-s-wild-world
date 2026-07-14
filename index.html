@@ -418,9 +418,11 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
     const SUPABASE_URL = "https://zgniwwnkkrndhvpxfrvg.supabase.co"; 
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
-    
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6Mj99NTg0NDJ9.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8"; // Shortened dummy fallback or exact working key
+
+    // Direct initialization with the verified active anon key you supplied
+    const activeAnonToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnbml3d25ra3JuZGh2cHhmcnZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM5NjI0NDIsImV4cCI6MjA5OTUzODQ0Mn0.S3d0VS3ySLkGdSw0f8I5f8EhkofrHXKwcynEnoTyiF8";
+    const supabaseClient = createClient(SUPABASE_URL, activeAnonToken);
     
     let currentUser = null; 
     let cachedProfiles = {};
@@ -593,15 +595,14 @@
         img.onload = function() {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
-          canvas.width = 150;
-          canvas.height = 150;
-          ctx.drawImage(img, 0, 0, 150, 150);
+          canvas.width = 100;
+          canvas.height = 100;
+          ctx.drawImage(img, 0, 0, 100, 100);
           
-          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-          document.getElementById('avatarPreviewBox').src = compressedBase64;
+          uploadedAvatarUrl = canvas.toDataURL('image/jpeg', 0.6);
+          document.getElementById('avatarPreviewBox').src = uploadedAvatarUrl;
           document.getElementById('avatarPreviewBox').style.display = 'block';
-          uploadedAvatarUrl = compressedBase64;
-          document.getElementById('avatarFileBtn').textContent = "✅ Prepared Successfully";
+          document.getElementById('avatarFileBtn').textContent = "✅ Prepared!";
         };
         img.src = evt.target.result;
       };
@@ -623,12 +624,13 @@
       
       const { error } = await supabaseClient.from('profiles').update(updateData).eq(detectedProfileIdKey, currentUser.id);
       if(error) { 
-        alert("Error saving fields: " + error.message); 
+        alert("Error saving: " + error.message); 
         return; 
       }
       
       closeProfileModal();
-      location.reload();
+      document.getElementById('myAvatarDisplay').src = uploadedAvatarUrl;
+      document.getElementById('whoLine').textContent = `Logged in: ${updatedName}`;
     }
 
     function applyPortalTheme(themeClass) {
@@ -708,11 +710,10 @@
 
       const sanitizedPeerId = currentUser.id.replace(/[^a-zA-Z0-9]/g, '');
       peer = new Peer(sanitizedPeerId, {
-        host: '0.peerjs.com', port: 443, path: '/', secure: true,
+        host: 'peerjs-production.up.railway.app', port: 443, path: '/', secure: true,
         config: { iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' }
+          { urls: 'stun:stun1.l.google.com:19302' }
         ]},
         debug: 1
       });
@@ -761,7 +762,7 @@
           document.getElementById('remoteVideo').srcObject = rStream;
         });
       } catch (err) {
-        alert("Unable to fetch media tracks. Ensure camera/microphone permissions are granted.");
+        alert("Unable to fetch media tracks.");
         hangupActiveCall();
       }
     }
@@ -844,7 +845,12 @@
     }
 
     function renderMessageBubble(msg) {
-      if(document.getElementById(`msg-${msg.id}`)) return;
+      if(document.getElementById(`msg-${msg.id}`)) {
+        const textDiv = document.getElementById(`text-node-${msg.id}`);
+        if (textDiv && msg.text) textDiv.innerHTML = `<div>${msg.text}</div>`;
+        updateReactionUi(msg.id, msg.reactions);
+        return;
+      }
       const chatArea = document.getElementById('chatArea');
       const isMe = msg.sender_uid === currentUser.id;
       const profile = cachedProfiles[msg.sender_uid] || { name: 'Partner' };
@@ -861,12 +867,7 @@
       }
 
       let replyMarkup = msg.reply_to_text ? `<div style="font-size:0.75rem; background:rgba(0,0,0,0.1); border-left:2px solid var(--gold); padding:4px; margin-bottom:4px;">${msg.reply_to_text}</div>` : '';
-
-      let tickMarkup = '';
-      if(isMe) {
-        const tickColor = msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);';
-        tickMarkup = `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${tickColor}">${msg.is_read ? '✓✓' : '✓'}</span>`;
-      }
+      let tickMarkup = isMe ? `<span class="status-tick" id="tick-${msg.id}" style="margin-left:4px; ${msg.is_read ? 'color: #64C9A2;' : 'color: rgba(255,255,255,0.4);'}">${msg.is_read ? '✓✓' : '✓'}</span>` : '';
 
       const avatarSrc = profile.avatar_url || '';
 
@@ -874,7 +875,7 @@
         <img src="${avatarSrc}" class="msg-avatar" id="bubble-av-${msg.id}" />
         <div class="msg-content-block">
           <span class="sender-label">${profile.name}</span>
-          <div class="msg">
+          <div class="msg" style="position: relative; cursor: pointer;">
             <div class="msg-actions">
               <button class="msg-reply-act-btn" data-id="${msg.id}" data-text="${msg.text || 'Media Message'}">Reply</button>
               ${isMe ? `<button class="msg-edit-act-btn" data-id="${msg.id}" data-text="${msg.text || ''}">Edit</button>` : ''}
@@ -882,6 +883,9 @@
             ${replyMarkup}
             <div id="text-node-${msg.id}">${msg.text ? `<div>${msg.text}</div>` : ''}</div>
             ${mediaMarkup}
+            
+            <div class="reaction-container" id="react-holder-${msg.id}" style="display:flex; gap:4px; margin-top:4px; font-size:0.8rem;"></div>
+
             <div class="msg-meta-line">
               ${new Date(msg.created_at || new Date()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
               ${tickMarkup}
@@ -889,6 +893,8 @@
           </div>
         </div>
       `;
+
+      row.querySelector('.msg').addEventListener('dblclick', () => handleReactionToggle(msg.id));
 
       row.querySelector('.msg-reply-act-btn').addEventListener('click', (e) => {
         setMessageReply(e.target.getAttribute('data-id'), e.target.getAttribute('data-text'));
@@ -902,7 +908,41 @@
 
       chatArea.appendChild(row);
       window.handleAvatarError(document.getElementById(`bubble-av-${msg.id}`), profile.name);
+      updateReactionUi(msg.id, msg.reactions);
       chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    async function handleReactionToggle(msgId) {
+      const chosenEmoji = "❤️"; 
+      const { data } = await supabaseClient.from('messages').select('reactions').eq('id', msgId).single();
+      let reactions = data?.reactions || [];
+      
+      const existingIndex = reactions.findIndex(r => r.uid === currentUser.id);
+      if (existingIndex > -1) {
+        reactions.splice(existingIndex, 1);
+      } else {
+        reactions.push({ uid: currentUser.id, emoji: chosenEmoji });
+      }
+
+      await supabaseClient.from('messages').update({ reactions }).eq('id', msgId);
+    }
+
+    function updateReactionUi(msgId, reactions) {
+      const holder = document.getElementById(`react-holder-${msgId}`);
+      if (!holder) return;
+      holder.innerHTML = '';
+      if (!reactions || reactions.length === 0) return;
+
+      const counts = {};
+      reactions.forEach(r => { counts[r.emoji] = (counts[r.emoji] || 0) + 1; });
+
+      Object.entries(counts).forEach(([emoji, count]) => {
+        const badge = document.createElement('span');
+        badge.style.cssText = "background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 10px; cursor: pointer; border: 1px solid var(--border);";
+        badge.textContent = `${emoji} ${count > 1 ? count : ''}`;
+        badge.addEventListener('click', (e) => { e.stopPropagation(); handleReactionToggle(msgId); });
+        holder.appendChild(badge);
+      });
     }
 
     function setMessageReply(id, partialText) {
@@ -1043,13 +1083,18 @@
       });
 
       supabaseClient.channel('table-changes')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => { 
-          renderMessageBubble(payload.new); 
-          if(payload.new.sender_uid !== currentUser.id) markAsRead(payload.new.id);
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, payload => { 
+          fetchChatHistory(); 
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages' }, payload => {
-          const txtNode = document.getElementById(`text-node-${payload.new.id}`);
-          if(txtNode && payload.new.text) txtNode.innerHTML = `<div>${payload.new.text}</div>`;
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bucket_items' }, payload => { 
+          loadBucketList(); 
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, payload => {
+          const updatedUser = payload.new;
+          const actualUid = updatedUser.id || updatedUser.uid || updatedUser.user_id;
+          if (actualUid) {
+            cachedProfiles[actualUid] = updatedUser;
+          }
         })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, payload => { fetchTimelinePosts(); })
         .subscribe();
@@ -1082,36 +1127,29 @@
       document.getElementById('anniversaryVal').textContent = `${isNaN(days) ? 0 : days} Days`;
     }
 
-    function addToBucketList() {
+    async function addToBucketList() {
       const item = prompt("Add a wild goal to our Bucket List:");
       if(!item) return;
-      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
-      list.push(item);
-      localStorage.setItem('couple-bucket', JSON.stringify(list));
-      renderBucketList();
+      await supabaseClient.from('bucket_items').insert([{ text: item }]);
+      loadBucketList();
     }
 
-    function loadBucketList() { renderBucketList(); }
-    
-    function renderBucketList() {
-      const list = JSON.parse(localStorage.getItem('couple-bucket') || '["Explore Tokyo", "Midnight skinny dip"]');
+    async function loadBucketList() {
+      const { data } = await supabaseClient.from('bucket_items').select('*').order('created_at', { ascending: true });
       const container = document.getElementById('bucketListUi');
       container.innerHTML = '';
-      list.forEach((item, index) => {
-        const li = document.createElement('li');
-        li.innerHTML = `<span>🔥 ${item}</span><span class="del-bucket-btn" data-idx="${index}" style="color:var(--danger); cursor:pointer;">✕</span>`;
-        li.querySelector('.del-bucket-btn').addEventListener('click', (e) => {
-          deleteBucket(parseInt(e.target.getAttribute('data-idx')));
+      if (data) {
+        data.forEach(item => {
+          const li = document.createElement('li');
+          li.innerHTML = `<span>🔥 ${item.text}</span><span class="del-bucket-btn" data-id="${item.id}" style="color:var(--danger); cursor:pointer;">✕</span>`;
+          li.querySelector('.del-bucket-btn').addEventListener('click', async (e) => {
+            const itemId = e.target.getAttribute('data-id');
+            await supabaseClient.from('bucket_items').delete().eq('id', itemId);
+            loadBucketList();
+          });
+          container.appendChild(li);
         });
-        container.appendChild(li);
-      });
-    }
-
-    function deleteBucket(index) {
-      let list = JSON.parse(localStorage.getItem('couple-bucket') || "[]");
-      list.splice(index, 1);
-      localStorage.setItem('couple-bucket', JSON.stringify(list));
-      renderBucketList();
+      }
     }
 
     async function fetchTimelinePosts() {
